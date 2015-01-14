@@ -295,6 +295,8 @@ void setup() {
 	myMenu.inicia(gprs.libVer());
 	myMenu.posicionActual(tituloMenu[x],
 			tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
+	zonas.imprimirZonas();
+	gprs.inicializaAlarmas(&zonas);
 	tiempo = millis();
 
 }
@@ -365,14 +367,24 @@ void loop() {
 void tratarRespuestaGprs() {
 	//alama
 #ifndef RELEASE
-	Serial << F("dentro de tratarRespuesta GPRS") << endl;
+	Serial << F("dentro de tratarRespuesta GPRS") << endl << F("Cadena recivida: ") << tratarRespuesta << endl;
+	tratarRespuesta=tratarRespuesta.substring(2,tratarRespuesta.length()-2);
+	/*for (int i = 0;i<tratarRespuesta.length();i++){
+		Serial << F("ASCII:  ") << (byte)tratarRespuesta.charAt(i) << F(" caracter: ") << tratarRespuesta.charAt(i)<< F(" Indice: ")<< i << endl;
+
+
+	}*/
 #endif
+
 	if (tratarRespuesta.startsWith("+CALV:")) {
 #ifndef RELEASE
 		Serial << F("dentro de CALV") << endl;
 #endif
 
 		byte alarma = ((byte) tratarRespuesta.charAt(7)) - 48;
+#ifndef RELEASE_FINAL
+		zonas.imprimirZonas();
+#endif
 		if (zonas.getEstadoPrimeraVez(alarma) == false) //salta la alarma se establece la duracion
 		{
 			zonas.setEstadoPrimeraVez(alarma);  //cambiamos es estado
@@ -384,7 +396,9 @@ void tratarRespuestaGprs() {
 			gprs.pararRiegoZona(alarma);
 			gprs.establecerHoraInicio(zonas.getZonaDeRiego(alarma));
 		}
-
+#ifndef RELEASE_FINAL
+		zonas.imprimirZonas();
+#endif
 #ifndef RELEASE
 		Serial << F("fuera de CALV") << endl;
 #endif
@@ -431,17 +445,25 @@ bool tratarRespuestaSerial() {
 #ifndef RELEASE
 	Serial << F("dentro de tratarRespuesta Serial") << endl;
 #endif
+	if (tratarRespuesta.startsWith("ER:")){
+		for (int i = 0;i<1024;i++){
+			EEPROM.write(i,'\x0');
+		}
+	}
 	if (tratarRespuesta.startsWith("E:")) {
 #ifndef RELEASE
 		Serial << F("dentro de Escritura:") << endl;
 #endif
-		byte pos = tratarRespuesta.charAt(2);
+		byte pos = (tratarRespuesta.charAt(2)-48);
 #ifndef RELEASE
 		Serial << F("valor de pos= ") << pos << endl;
 #endif
 		pos = pos * 16;
 		for (int i = 4; i < tratarRespuesta.length(); i++) {
-			EEPROM.write(pos++, (byte) tratarRespuesta.charAt(i++));
+			EEPROM.write(pos, (byte) tratarRespuesta.charAt(i));
+			Serial <<F("posicion: ")<<pos<<F(" valor: ")<<(byte) tratarRespuesta.charAt(i)<< F(" caracter: ") <<tratarRespuesta.charAt(i) <<endl;
+			pos++;
+			i++;
 		}
 #ifndef RELEASE
 		Serial << F("fuera de Escritura:") << endl;

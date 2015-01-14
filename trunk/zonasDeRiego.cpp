@@ -13,18 +13,20 @@ zonasDeRiego::zonasDeRiego() {
 	char * aux2= &aux[16];
 	EEPROM.lecturaEeprom16(4,aux);
 	EEPROM.lecturaEeprom16(5,aux2);
-	numeroZonasRiego=aux[0];
+	numeroZonasRiego=(aux[0]-48);
 	zonaDeRiego = new t_zonaRiego[numeroZonasRiego];
 	byte posicion=1;
 	for (int i =0;i<numeroZonasRiego;i++){
-		zonaDeRiego[i].numeroZona=aux[posicion++];
+		zonaDeRiego[i].numeroZona=(aux[posicion++]-48);
 		zonaDeRiego[i].litrosPorRiego=aux[posicion++];
-		zonaDeRiego[i].horaInicio=aux[posicion++];
-		zonaDeRiego[i].minutoInicio=aux[posicion++];
-		zonaDeRiego[i].intervaloRiego=aux[posicion++];
+		zonaDeRiego[i].horaInicio=(aux[posicion++]-48);
+		zonaDeRiego[i].minutoInicio=(aux[posicion++]-48);
+		zonaDeRiego[i].intervaloRiego=(aux[posicion++]-48);
 		zonaDeRiego[i].duracion=aux[posicion++];
 		zonaDeRiego[i].primeraVez=false;
 	}
+//E:4 2 4 d 1 Q 0 < 2 d 1 T 0 <
+//    2  4  d  1  Q  0  <  2  d  1  T  0  <
 	/*x  nz l  h  m  i  d  nz l  h  m  i  d  nz l  h
 	  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
@@ -51,3 +53,15 @@ int zonasDeRiego::getNumeroZonasRiego(){
 t_zonaRiego * zonasDeRiego::getZonaDeRiego(byte posicion){
 	return &zonaDeRiego[posicion];
 }
+
+#ifndef RELEASE_FINAL
+void zonasDeRiego::imprimirZonas(void){
+	Serial<<endl <<F("Zonas de riego totales: ") << numeroZonasRiego << endl;
+	for (int i = 0;i<numeroZonasRiego;i++){
+		Serial <<F("Zona ")<<i<<F(" en memoria numero: ")<<zonaDeRiego[i].numeroZona<<endl;
+		Serial <<F("\tHora: ")<<zonaDeRiego[i].horaInicio<<F(" minutos: ")<<zonaDeRiego[i].minutoInicio<<endl;
+		Serial <<F("\tDuracion: ")<<zonaDeRiego[i].duracion<<F(" minutos")<<F(" litros por riego: ") << zonaDeRiego[i].litrosPorRiego<<endl;
+		Serial <<F("\tPrimera vez: ")<<zonaDeRiego[i].primeraVez <<endl<<endl;
+	}
+}
+#endif
