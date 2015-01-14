@@ -28,6 +28,22 @@ char * GSM::libVer(void)
   return (GSM_LIB_VERSION);
 }
 
+void GSM::inicializaAlarmas(zonasDeRiego * zonas){
+#ifndef RELEASE
+	Serial << F("Iniciando las alarmas: ")<<endl <<F("Borrado de las alarmas: ") << endl;
+#endif
+	enviaComando("AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5");
+#ifndef RELEASE
+	Serial << F("Iniciando las alarmas: ") << endl;
+#endif
+	for (int i=0;i<zonas->getNumeroZonasRiego();i++){
+		establecerZona(zonas->getZonaDeRiego(i));
+	}
+#ifndef RELEASE
+	Serial << F("Fin iniciando la alarmas: ")<<endl;
+#endif
+}
+
 void GSM::establecerZona(t_zonaRiego *zonaDeRiego){
 	char *cadena;
 	sprintf(bufferO,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",zonaDeRiego->horaInicio,
@@ -67,7 +83,7 @@ void GSM::establecerHoraInicio(t_zonaRiego *zonaDeRiego){
 
 void GSM::iniciarRiegoZona(byte zona){
 	char *cadena;
-	sprintf(bufferO,"AT+GSPIO=0,%d,1,1",zona);
+	sprintf(bufferO,"AT+SGPIO=0,%d,1,1",zona);
 #ifndef RELEASE
 	Serial << F("iniciar Zona de Riego cadena: ")<< bufferO << endl;
 #endif
@@ -76,7 +92,7 @@ void GSM::iniciarRiegoZona(byte zona){
 
 void GSM::pararRiegoZona(byte zona){
 	char *cadena;
-	sprintf(bufferO,"AT+GSPIO=0,%d,1,0",zona);
+	sprintf(bufferO,"AT+SGPIO=0,%d,1,0",zona);
 #ifndef RELEASE
 	Serial << F("parar Zona de Riego cadena: ")<< bufferO << endl;
 #endif
@@ -153,9 +169,6 @@ char * GSM::enviaComando(const char str[]){
 	println(str);
 #ifndef RELEASE
 	Serial << F("Comando enviado: ") << str << endl;
-	//Serial.print(F("comando enviado: "));
-
-	//Serial.println(str);
 #endif
 	delay(1000);
 	bool error=true;

@@ -76,7 +76,7 @@
 //#define Relay_6  9
 
 #define RIEGO_VERSION_MAYOR "0" //15088 676 646
-#define RIEGO_VERSION_MENOR "3.4" //18546 667 638
+#define RIEGO_VERSION_MENOR "4.0" //18546 667 638
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
 
 //end of add your includes here

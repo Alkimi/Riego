@@ -4,6 +4,7 @@
 #define __GSM
 
 #include "Riego.h"
+#include "zonasDeRiego.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
 #define GSM_LIB_VERSION_MENOR "4.0"
@@ -43,6 +44,7 @@ public:
     void establecerHoraInicio(t_zonaRiego *zonaDeRiego);
     void iniciarRiegoZona(byte zona);
     void pararRiegoZona(byte zona);
+    void inicializaAlarmas(zonasDeRiego * zonas);
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
 

@@ -17,7 +17,9 @@ public:
 	t_zonaRiego * getZonaDeRiego(byte posicion);
 	bool getEstadoPrimeraVez(byte posicion);
 	void setEstadoPrimeraVez(byte posicion);
-
+#ifndef RELEASE_FINAL
+	void imprimirZonas(void);
+#endif
 private:
 	t_zonaRiego *zonaDeRiego;
 	int numeroZonasRiego;
