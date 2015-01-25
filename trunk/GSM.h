@@ -7,7 +7,7 @@
 #include "zonasDeRiego.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
-#define GSM_LIB_VERSION_MENOR "4.0"
+#define GSM_LIB_VERSION_MENOR "5.0"
 
 #define GSM_LIB_VERSION GSM_LIB_VERSION_MAYOR"."GSM_LIB_VERSION_MENOR
 
@@ -20,8 +20,10 @@
 
 #define GSM_POWER_ON_OFF 9
 
-#define MAX_BUFFER 150
+#define MAX_BUFFER 300
 #define MAX_POSICION_BUFFER MAX_BUFFER-1
+#define abrir true
+#define cerrar false
 
 
 class GSM
@@ -42,9 +44,10 @@ public:
     void establecerZona(t_zonaRiego *zonaDeRiego);
     void establecerHoraFin(t_zonaRiego *zonaDeRiego);
     void establecerHoraInicio(t_zonaRiego *zonaDeRiego);
-    void iniciarRiegoZona(byte zona);
-    void pararRiegoZona(byte zona);
+    void iniciarRiegoZona(byte numeroAlarma);
+    void pararRiegoZona(byte numeroAlarma);
     void inicializaAlarmas(zonasDeRiego * zonas);
+    void valvulaPrincipal(bool estado);
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
 

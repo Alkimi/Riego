@@ -22,11 +22,11 @@ zonasDeRiego::zonasDeRiego() {
 		zonaDeRiego[i].horaInicio=(aux[posicion++]-48);
 		zonaDeRiego[i].minutoInicio=(aux[posicion++]-48);
 		zonaDeRiego[i].intervaloRiego=(aux[posicion++]-48);
-		zonaDeRiego[i].duracion=aux[posicion++];
+		zonaDeRiego[i].duracion=(aux[posicion++]-48);
 		zonaDeRiego[i].primeraVez=false;
 	}
-//E:4 2 4 d 1 Q 0 < 2 d 1 T 0 <
-//    2  4  d  1  Q  0  <  2  d  1  T  0  <
+//E:4 2 4 d C N 0 5 2 d C R 0 5
+//    2  4  d  C  N  5  <  2  d  1  T  0  <
 	/*x  nz l  h  m  i  d  nz l  h  m  i  d  nz l  h
 	  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
@@ -37,12 +37,22 @@ zonasDeRiego::~zonasDeRiego() {
 	delete zonaDeRiego;
 }
 
-bool zonasDeRiego::getEstadoPrimeraVez(byte posicion){
-	return zonaDeRiego[posicion].primeraVez;
+bool zonasDeRiego::getEstadoPrimeraVez(byte numeroAlarma){
+	for (byte contador =0;contador<numeroZonasRiego;contador++){
+		if (zonaDeRiego[contador].numeroZona==numeroAlarma){
+			return zonaDeRiego[contador].primeraVez;
+		}
+	}
+	return true;
 }
 
-void zonasDeRiego::setEstadoPrimeraVez(byte posicion){
-	zonaDeRiego[posicion].primeraVez = !zonaDeRiego[posicion].primeraVez;
+void zonasDeRiego::setEstadoPrimeraVez(byte numeroAlarma){
+	for (byte contador =0;contador<numeroZonasRiego;contador++){
+			if (zonaDeRiego[contador].numeroZona==numeroAlarma){
+				zonaDeRiego[contador].primeraVez = !zonaDeRiego[contador].primeraVez;
+			}
+		}
+
 }
 
 
@@ -52,6 +62,21 @@ int zonasDeRiego::getNumeroZonasRiego(){
 
 t_zonaRiego * zonasDeRiego::getZonaDeRiego(byte posicion){
 	return &zonaDeRiego[posicion];
+
+}
+
+t_zonaRiego * zonasDeRiego::getZonaDeRiegoAlarma(byte numeroAlarma){
+	for (byte contador =0;contador<numeroZonasRiego;contador++){
+			if (zonaDeRiego[contador].numeroZona==numeroAlarma){
+				return &zonaDeRiego[contador];
+			}
+		}
+	return &zonaDeRiego[numeroAlarma];
+
+}
+
+byte zonasDeRiego::litrosTotalesZonaRiego(byte numeroZona){
+	return zonaDeRiego[numeroZona].litrosPorRiego;
 }
 
 #ifndef RELEASE_FINAL
