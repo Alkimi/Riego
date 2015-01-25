@@ -15,8 +15,10 @@ public:
 	virtual ~zonasDeRiego();
 	int getNumeroZonasRiego();
 	t_zonaRiego * getZonaDeRiego(byte posicion);
-	bool getEstadoPrimeraVez(byte posicion);
-	void setEstadoPrimeraVez(byte posicion);
+	t_zonaRiego * getZonaDeRiegoAlarma(byte numeroAlarma);
+	bool getEstadoPrimeraVez(byte numeroAlarma);
+	void setEstadoPrimeraVez(byte numeroAlarma);
+	byte litrosTotalesZonaRiego(byte numeroZona);
 #ifndef RELEASE_FINAL
 	void imprimirZonas(void);
 #endif

@@ -76,7 +76,7 @@
 //#define Relay_6  9
 
 #define RIEGO_VERSION_MAYOR "0" //15088 676 646
-#define RIEGO_VERSION_MENOR "4.0" //18546 667 638
+#define RIEGO_VERSION_MENOR "4.0" //19136 619 590
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
 
 //end of add your includes here
@@ -101,6 +101,7 @@ bool setFechaHora(byte opcion);		//*
 void cambioNumero(byte tipo);		//*
 void comandoGPRS(void);				//*
 void tratarRespuestaGprs(void); 	//*
+void getBateria(void);
 
 
 
