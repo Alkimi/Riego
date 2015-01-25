@@ -7,7 +7,7 @@
 #include "zonasDeRiego.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
-#define GSM_LIB_VERSION_MENOR "5.0"
+#define GSM_LIB_VERSION_MENOR "5.2"
 
 #define GSM_LIB_VERSION GSM_LIB_VERSION_MAYOR"."GSM_LIB_VERSION_MENOR
 
@@ -20,7 +20,7 @@
 
 #define GSM_POWER_ON_OFF 9
 
-#define MAX_BUFFER 300
+#define MAX_BUFFER 150
 #define MAX_POSICION_BUFFER MAX_BUFFER-1
 #define abrir true
 #define cerrar false
@@ -41,9 +41,10 @@ public:
     String readString(void);
     int read(void);
     char * enviaComando(const char str[]);
-    void establecerZona(t_zonaRiego *zonaDeRiego);
-    void establecerHoraFin(t_zonaRiego *zonaDeRiego);
-    void establecerHoraInicio(t_zonaRiego *zonaDeRiego);
+    char * enviaComando(const String &s);
+    void establecerZona(t_zonaRiego *DatoZonaDeRiego);
+    void establecerHoraFin(t_zonaRiego *DatoZonaDeRiego);
+    void establecerHoraInicio(t_zonaRiego *DatoZonaDeRiego);
     void iniciarRiegoZona(byte numeroAlarma);
     void pararRiegoZona(byte numeroAlarma);
     void inicializaAlarmas(zonasDeRiego * zonas);
@@ -59,6 +60,7 @@ private:
     char bufferO[MAX_BUFFER];
     void limpiaBufferI(void);
     void limpiaBufferO(void);
+    char *procesaEnviaComando(void);
 };
 #endif
 

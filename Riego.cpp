@@ -44,9 +44,6 @@ Menu myMenu("", numeroDeMenus);
 GSM gprs;
 zonasDeRiego zonas;
 
-/*bool salidaDebug = false;
- bool salida = false;*/
-
 char linea1[16];
 char linea2[16];
 
@@ -85,7 +82,7 @@ void controlTiempo(void) {
 void getFechaHora(void) {
 	strcpy_P(linea1, PSTR("Fecha: "));
 	strcpy_P(linea2, PSTR("Hora : "));
-	cadena = gprs.enviaComando("AT+CCLK?");
+	cadena = gprs.enviaComando(F("AT+CCLK?"));
 	linea1[7] = cadena[14];
 	linea1[8] = cadena[15];
 	linea1[9] = cadena[13];
@@ -285,8 +282,8 @@ void getSMS(void) {
 }
 
 void setup() {
-	Serial.begin(19200);
-#ifndef RELEASE
+	Serial.begin(4800);
+#ifndef RELEASE_FINAL
 	Serial << F("Memoria libre: ") << freeRam() << endl
 			<< F("------------------------") << endl;
 	Serial << F("Riego Total V ") << RIEGO_VERSION << endl << F("Menu V ")
@@ -295,7 +292,9 @@ void setup() {
 	myMenu.inicia(gprs.libVer());
 	myMenu.posicionActual(tituloMenu[x],
 			tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
+#ifndef RELEASE_FINAL
 	zonas.imprimirZonas();
+#endif
 	gprs.inicializaAlarmas(&zonas);
 	tiempo = millis();
 
@@ -368,15 +367,15 @@ void tratarRespuestaGprs() {
 	//alama
 #ifndef RELEASE
 	Serial << F("dentro de tratarRespuesta GPRS") << endl << F("Cadena recivida: ") << tratarRespuesta << endl;
-	tratarRespuesta=tratarRespuesta.substring(2,tratarRespuesta.length()-2);
+
 	/*for (int i = 0;i<tratarRespuesta.length();i++){
 		Serial << F("ASCII:  ") << (byte)tratarRespuesta.charAt(i) << F(" caracter: ") << tratarRespuesta.charAt(i)<< F(" Indice: ")<< i << endl;
 
 
 	}*/
 #endif
-
-	if (tratarRespuesta.startsWith("+CALV:")) {
+	tratarRespuesta=tratarRespuesta.substring(2,tratarRespuesta.length()-2);
+	if (tratarRespuesta.startsWith(PSTR("+CALV:"))) {
 #ifndef RELEASE
 		Serial << F("dentro de CALV") << endl;
 #endif
@@ -432,7 +431,7 @@ void comandoGPRS(void) {
 					<< endl;
 #endif
 
-			gprs.println(tratarRespuesta);       // write it to the GPRS shield
+			gprs.enviaComando(tratarRespuesta);       // write it to the GPRS shield
 		}
 	}
 #endif
