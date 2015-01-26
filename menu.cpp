@@ -96,7 +96,7 @@ void Menu::inicia(const char GSM[])
 #else
     Serial << MENU_LIB_VERSION << endl;
 #endif // DEBUG_PROCESS
-#ifdef RELEASE
+#ifdef RELEASE_FINAL
     delay(2000);
 #endif
     linea2(F("GSM  V "));
@@ -105,12 +105,12 @@ void Menu::inicia(const char GSM[])
 #else
     Serial << GSM << endl;
 #endif // DEBUG_PROCESS
-#ifdef RELEASE
+#ifdef RELEASE_FINAL
     delay(4000);
 #endif
     linea1(F("Muevase con las "));
     linea2(F("teclas direccion"));
-#ifdef RELEASE
+#ifdef RELEASE_FINAL
     delay(4000);
 #endif
 #ifndef DEBUG_PROCESS
@@ -193,7 +193,7 @@ void Menu::SetCursor(byte x,byte y)
 #ifndef DEBUG_PROCESS
     lcd->setCursor(x,y);
 #else
-    Serial << F("setCursor(")<< x <<F(",")<<y<<endl;
+    Serial << F("setCursor(")<< x <<F(",")<<y<<F(")")<<endl;
 #endif // DEBUG_PROCESS
 
 
