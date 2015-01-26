@@ -20,9 +20,20 @@ GSM::GSM()
         //pinMode(GSM_POWER_ON_OFF,OUTPUT);
         myPortSerial = new SoftwareSerial(GSM_SERIAL_RX, GSM_SERIAL_TX);
         myPortSerial->begin(4800);
+        /*if (!isActivo()){
+        	SIM900power();
+        }*/
     #endif // DEBUG_PROCESS
 
 }
+
+bool GSM::isActivo(void){
+	return (enviaComando(F("AT"))==NULL)?true:false;
+}
+/*
+void GSM::enviaSMS(char *numero,boolean reventon,byte zona,byte litros){
+
+}*/
 
 char * GSM::libVer(void)
 {
@@ -70,6 +81,19 @@ void GSM::establecerHoraInicio(t_zonaRiego *DatoZonaDeRiego){
 	sprintf(bufferO,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",DatoZonaDeRiego->numeroZona,DatoZonaDeRiego->horaInicio,
 			DatoZonaDeRiego->minutoInicio,DatoZonaDeRiego->numeroZona,DatoZonaDeRiego->intervaloRiego);
 	cadena=enviaComando(bufferO);
+}
+
+bool GSM::getProblemaEnZona(byte zona){
+	//leemos el varlo de la epron de la zona
+	byte valor= EEPROM.read(16+zona);
+	return (valor!=0x0)?true:false;
+}
+
+void GSM::setProblemaEnZona(byte zona){
+	//invertimos el valor de eprom
+	byte valor= EEPROM.read(16+zona);
+	(valor!=0x0)?valor=0x0:valor=0x1;
+	EEPROM.write(16+zona,valor);
 }
 
 void GSM::iniciarRiegoZona(byte numeroAlarma){
@@ -185,7 +209,7 @@ char * GSM::procesaEnviaComando(void){
 			}
 		}
 	}while(millis()-tiempo<1000);
-	if (bufferI[2]=='E' && bufferI[3]=='R' && bufferI[4]=='R' && bufferI[5]=='O' && bufferI[6]=='R') return NULL;
+	if ((bufferI[2]=='E' && bufferI[3]=='R' && bufferI[4]=='R' && bufferI[5]=='O' && bufferI[6]=='R') || (contador ==0)) return NULL;
 
 	contador=0;
     for (int i = 2; i<MAX_BUFFER;i++){

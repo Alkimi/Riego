@@ -76,7 +76,7 @@
 //#define Relay_6  9
 
 #define RIEGO_VERSION_MAYOR "0" //15088 676 646
-#define RIEGO_VERSION_MENOR "4.2" //20172 651 622
+#define RIEGO_VERSION_MENOR "5.2" //20172 651 622
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
 
 //end of add your includes here
@@ -91,7 +91,7 @@ void setup();
 
 //add your function definitions for the project Riego here
 
-byte get_key(unsigned int input); 	//*
+int get_key(unsigned int input); 	//*
 void tratarOpcion(byte x,byte y);	//*
 void controlTiempo(void); 			//*
 void getSMS(void);					//*
@@ -102,15 +102,15 @@ void cambioNumero(byte tipo);		//*
 void comandoGPRS(void);				//*
 void tratarRespuestaGprs(void); 	//*
 void getBateria(void);
-
-
+void estadoProblemaEnZona(byte zona);
+int lecturaPulsador(void);
 
 
 //metodos de pruebas a borrar
 #ifndef RELEASE_FINAL
 bool tratarRespuestaSerial(void); 	//*
 void pruebaRelay(void);				//*
-void leerEEPROM(void);				//*
+void leerEEPROM(byte pos);			//*
 int freeRam();						//*
 #endif
 

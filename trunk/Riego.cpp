@@ -10,9 +10,9 @@ const byte numeroMaximoDeSubmenus = 4;
 
 //FLASH_STRING_ARRAY(tituloMenu,PSTR("1 Configuración"),PSTR("2 Información"), PSTR("3  Menu 3"),PSTR("4  Menu 4"),PSTR("5  Menu 5"));
 const char tituloMenu[numeroDeMenus][17] = { "1 Configuracion", "2 Infomacion",
-		"3  Menu 3       ", "4  Menu 4       ", "5  Menu 5       " };
+		"3 Reinicia Zona", "4  Menu 4       ", "5  Menu 5       " };
 
-byte numeroDeSubmenus[numeroDeMenus] = { 4, 2, 2, 1, 4 };
+byte numeroDeSubmenus[numeroDeMenus] = { 4, 2, 4, 1, 4 };
 
 /*FLASH_STRING_ARRAY(tituloSubmenu,PSTR("1.1 xxxxxxxxxx"),PSTR("1.2 Destino SMS"),PSTR("1.3 Fecha"),PSTR("1.4 Hora"),
  PSTR("2.1 Fecha/Hora"),PSTR("2.2 Destino SMS"),PSTR(""),PSTR(""),
@@ -22,17 +22,16 @@ byte numeroDeSubmenus[numeroDeMenus] = { 4, 2, 2, 1, 4 };
  */
 const char tituloSubmenu[numeroDeMenus * numeroMaximoDeSubmenus][17] = {
 		"1.1 xxxxxxxxxx", "1.2 Destino SMS", "1.3 Fecha", "1.4 Hora",
-		"2.1 Fecha/Hora", "2.2 Destino SMS", "", "", "3.1 Submenu 1",
-		"3.2 Submenu 2", "", "", "4.1 Submenu 1", "", "", "", "5.1 Submenu 1",
+		"2.1 Fecha/Hora", "2.2 Destino SMS", "", "", "3.1 Zona 1",
+		"3.2 Zona 2", "3.3 Zona 3", "3.4 Zona 4", "4.1 Submenu 1", "", "", "", "5.1 Submenu 1",
 		"5.2 Submenu 2", "5.3 Submenu 3", "5.4 Submenu 4" };
 
 unsigned int adc_key_val[5] = { 50, 200, 400, 600, 800 };
 char NUM_KEYS = 5;
-int adc_key_in;
-byte key = 255;
-byte oldkey = 255;
+int key = -1;
 boolean luzEncendida = true;
 boolean cursorActivo = false;
+boolean pantallaEncendida = true;
 unsigned long tiempo;
 unsigned long tiempo2;
 byte x = 0;
@@ -48,22 +47,18 @@ char linea1[16];
 char linea2[16];
 
 // Convertimos el valor leido en analogico en un numero de boton pulsado
-byte get_key(unsigned int input) {
-	byte k;
-
-	for (k = 0; k < NUM_KEYS; k++) {
+int get_key(unsigned int input) {
+	for (byte k = 0; k < NUM_KEYS; k++) {
 		if (input < adc_key_val[k]) {
 			return k;
 		}
 	}
-
-	if (k >= NUM_KEYS)
-		k = 255;  // Error en la lectura
-	return k;
+	return -1;
 }
 
 void controlTiempo(void) {
 	if (millis() - tiempo > 15000) { // a los 15 segundos apagamos el display
+		pantallaEncendida=false;
 		myMenu.noDisplay();
 	}
 	// Si han pasado mas de 10 segundos apagamos la luz
@@ -76,6 +71,32 @@ void controlTiempo(void) {
 	if (millis() - tiempo > 5000) {
 		myMenu.noBlink();
 		cursorActivo = false;
+	}
+}
+
+void estadoProblemaEnZona(byte zona){
+	zona=zona-7;
+	strcpy_P(linea1, PSTR("Estado zona:    "));
+	linea1[13]=zona+48;
+	myMenu.linea1(linea1);
+	if (!gprs.getProblemaEnZona(zona)){
+		strcpy_P(linea2, PSTR("ZONA correcta "));
+		myMenu.linea2(linea2);
+	}else{
+		myMenu.blink();
+		strcpy_P(linea2, PSTR("   REINICIAR   "));
+		myMenu.linea2(linea2);
+		//esperamos a tecla select
+		bool salida = false;
+		do {
+			if (lecturaPulsador() == 4) { // Se ha pulsado la tecla de seleccion
+				salida = true;
+			}
+		} while (!salida);
+		//guardamos valor en eprom
+		gprs.setProblemaEnZona(zona);
+		strcpy_P(linea2, PSTR("ZONA correcta "));
+		myMenu.linea2(linea2);
 	}
 }
 
@@ -109,14 +130,12 @@ bool setFechaHora(byte opcion) {
 	if (cadena == NULL) {
 		myMenu.noBlink();
 		if (opcion == 2) {
-			myMenu.linea2(F("Fecha erronea"));
+			myMenu.linea2("Fecha erronea");
 		} else {
-			myMenu.linea2(F("Hora  erronea"));
+			myMenu.linea2("Hora  erronea");
 		}
+		delay(1000);
 		salida = false;
-		delay(3000);
-		myMenu.borraLinea2();
-		myMenu.blink();
 	}
 	return salida;
 
@@ -129,50 +148,79 @@ void tratarOpcion(byte x, byte y) {
 			<< F("Memoria libre: ") << freeRam() << endl << F("X: ") << x
 			<< F(" Y: ") << y << F(" opcion: ") << opcion << endl;
 #endif
+	myMenu.noBlink();
 	switch (opcion) {
 	case 1:
 		getSMS();
+		myMenu.blink();
 		cambioNumero(opcion);
 		setSMS();
 		break;
 	case 2:
 	case 3:
 	case 4:
-		myMenu.noBlink();
 		getFechaHora();
 		myMenu.posicionActual(linea1, linea2);
 		if ((opcion == 2) || (opcion == 3)) {
-			myMenu.blink();
 			do {
+				myMenu.blink();
 				cambioNumero(opcion);
 			} while (setFechaHora(opcion) == false);
-		} else {
-			delay(3000);
 		}
-		myMenu.blink();
+
 		break;
 	case 5:
-		myMenu.noBlink();
 		getSMS();
-		delay(3000);
-		myMenu.blink();
+		break;
+	case 8:
+	case 9:
+	case 10:
+	case 11:
+		estadoProblemaEnZona(opcion);
 		break;
 	}
+	delay(3000);
+	myMenu.blink();
 #ifndef RELEASE
 	Serial << F("saliendo de tratar opcion") << endl << F("Memoria libre: ")
 			<< freeRam() << endl;
 #endif
 }
 
+int lecturaPulsador(void){
+	int adc_key_inNumero;
+	int keyNumero = -1;
+
+	adc_key_inNumero = analogRead(0);    // Leemos el valor de la pulsacion
+	keyNumero = get_key(adc_key_inNumero);    // Obtenemos el boton pulsado
+	if (keyNumero != -1) {  // if keypress is detected
+		delay(100);  // Espera para evitar los rebotes de las pulsaciones
+		adc_key_inNumero = analogRead(0); // Leemos el valor de la pulsacion
+		keyNumero = get_key(adc_key_inNumero); // Obtenemos el boton pulsado
+		if (keyNumero != -1) {
+			if (!luzEncendida) {
+				pinMode(10, INPUT);
+				luzEncendida = true;
+				cursorActivo = true;
+				pantallaEncendida=true;
+				myMenu.blink(); // Mostramos el cursor parpadeando
+				myMenu.display(); //encendemos la pantalla
+			}
+			return keyNumero;
+		}
+	}
+	return -1;
+}
+
 void cambioNumero(byte opcion) {
 	bool salida = false;
 	char caracter;
-	byte oldkeyNumero = 255;
+
 	byte xmax, xmin;
 	byte xNumero;
 	byte columna;
-	int adc_key_inNumero;
-	byte keyNumero = 255;
+	int keyNumero;
+
 	char * linea;
 
 	xmax = 14;
@@ -199,86 +247,71 @@ void cambioNumero(byte opcion) {
 	myMenu.SetCursor(xmin, columna);
 	caracter = linea[xmin];
 	xNumero = xmin;
-	delay(100);
 	do {
-		adc_key_inNumero = analogRead(0);    // Leemos el valor de la pulsacion
-		keyNumero = get_key(adc_key_inNumero);    // Obtenemos el boton pulsado
-		if (keyNumero != oldkeyNumero) {  // if keypress is detected
-			delay(50);  // Espera para evitar los rebotes de las pulsaciones
-			adc_key_inNumero = analogRead(0); // Leemos el valor de la pulsacion
-			keyNumero = get_key(adc_key_inNumero); // Obtenemos el boton pulsado
-			if (keyNumero != oldkeyNumero) {
-				oldkeyNumero = keyNumero;
-				if (keyNumero >= 0 && keyNumero < NUM_KEYS) {
-					myMenu.SetCursor(xNumero, columna);
+		keyNumero=lecturaPulsador();
+		if (keyNumero >= 0 && keyNumero < NUM_KEYS) {
+			myMenu.SetCursor(xNumero, columna);
 #ifndef RELEASE
-					Serial << F("entrada Tecla pulsada: ") << keyNumero << endl
-							<< F(" x= ") << xNumero << F(" caracter: ")
-							<< caracter << F(" linea: ") << linea << endl;
+			Serial << F("entrada Tecla pulsada: ") << keyNumero << endl
+					<< F(" x= ") << xNumero << F(" caracter: ")
+					<< caracter << F(" linea: ") << linea << endl;
 #endif
-					if (!luzEncendida) {
-						pinMode(10, INPUT);
-						luzEncendida = true;
-						cursorActivo = true;
-						myMenu.blink(); // Mostramos el cursor parpadeando
-						myMenu.display(); //encendemos la pantalla
-					}
 
-					if (keyNumero == 0) {  // Se ha pulsado la tecla derecha
-						xNumero++;
-						if ((opcion > 1) && ((xNumero == 9) || (xNumero == 12)))
-							xNumero++;
-						if (xNumero > xmax)
-							xNumero = xmin;
-						caracter = linea[xNumero];
-					}
-					if (keyNumero == 1) {   // Se ha pulsado la tecla arriba
-						caracter--;
-						if (caracter < '0')
-							caracter = '9';
-						linea[xNumero] = caracter;
-						myMenu.write(caracter);
-					}
-					if (keyNumero == 2) {  // Se ha pulsado la tecla abajo
-						caracter++;
-						if (caracter > '9')
-							caracter = '0';
-						linea[xNumero] = caracter;
-						myMenu.write(caracter);
-					}
+		if (keyNumero == 0) {  // Se ha pulsado la tecla derecha
+			xNumero++;
+			if ((opcion > 1) && ((xNumero == 9) || (xNumero == 12)))
+				xNumero++;
+			if (xNumero > xmax)
+				xNumero = xmin;
+			caracter = linea[xNumero];
+		}
+		if (keyNumero == 1) {   // Se ha pulsado la tecla arriba
+			caracter--;
+			if (caracter < '0')
+				caracter = '9';
+			linea[xNumero] = caracter;
+			myMenu.write(caracter);
+		}
+		if (keyNumero == 2) {  // Se ha pulsado la tecla abajo
+			caracter++;
+			if (caracter > '9')
+				caracter = '0';
+			linea[xNumero] = caracter;
+			myMenu.write(caracter);
+		}
 
-					if (keyNumero == 3) {  // Se ha pulsado la tecla izquierda
-						xNumero--;
-						if ((opcion > 1) && ((xNumero == 9) || (xNumero == 12)))
-							xNumero--;
-						if (xNumero < xmin)
-							xNumero = xmax;
-						caracter = linea[xNumero];
-					}
-					if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
-						salida = true;
-					}
-					myMenu.SetCursor(xNumero, columna);
+		if (keyNumero == 3) {  // Se ha pulsado la tecla izquierda
+			xNumero--;
+			if ((opcion > 1) && ((xNumero == 9) || (xNumero == 12)))
+				xNumero--;
+			if (xNumero < xmin)
+				xNumero = xmax;
+			caracter = linea[xNumero];
+		}
+		if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
+			salida = true;
+		}
+		myMenu.SetCursor(xNumero, columna);
 #ifndef RELEASE
-					Serial << F("SALIDA Tecla pulsada: ") << keyNumero << endl
-							<< F(" x= ") << xNumero << F(" caracter: ")
-							<< caracter << F(" linea: ") << linea << endl;
+		Serial << F("SALIDA Tecla pulsada: ") << keyNumero << endl
+				<< F(" x= ") << xNumero << F(" caracter: ")
+				<< caracter << F(" linea: ") << linea << endl;
 #endif
-				}
-			}
 		}
 	} while (!salida);
 }
 
 void setSMS(void) {
 	EEPROM.escrituraEeprom16(0, linea2);
-	delay(3000);
 }
 
 void getSMS(void) {
-	strcpy_P(linea1, PSTR("Destino SMS:"));
+	myMenu.noBlink();
 	EEPROM.lecturaEeprom16(0, linea2);
-	myMenu.posicionActual(linea1, linea2);
+	if (pantallaEncendida){
+		strcpy_P(linea1, PSTR("Destino SMS:"));
+		myMenu.posicionActual(linea1, linea2);
+	}
 }
 
 void setup() {
@@ -303,64 +336,45 @@ void setup() {
 void loop() {
 	comandoGPRS();
 	controlTiempo();
-	adc_key_in = analogRead(0);    // Leemos el valor de la pulsacion
-	key = get_key(adc_key_in);    // Obtenemos el boton pulsado
-
-	if (key != oldkey) {  // if keypress is detected
-
-		delay(50);  // Espera para evitar los rebotes de las pulsaciones
-		adc_key_in = analogRead(0);    // Leemos el valor de la pulsacion
-		key = get_key(adc_key_in);    // Obtenemos el boton pulsado
-		if (key != oldkey) {
-			tiempo = millis();
-			if (!luzEncendida) { // Al pulsar cualquier tecla encendemos la pantalla
-				pinMode(10, INPUT);
-				luzEncendida = true;
-			} else { // si la pantalla esta encendida seguimos funcionando normalmente
-				oldkey = key;
-				if (key >= 0 && key < NUM_KEYS) { // Si se ha pulsado cualquier tecla
-					myMenu.blink(); // Mostramos el cursor parpadeando
-					myMenu.display(); //encendemos la pantalla
-					cursorActivo = true;
-				}
-				if (key == 0) {  // Se ha pulsado la tecla derecha
-					x++;
-					if (x > numeroDeMenus - 1)
-						x = 0;
-					y = 0;
-				}
-				if (key == 1) {   // Se ha pulsado la tecla arriba
-					y--;
-					if (y > NUM_KEYS)
-						y = numeroDeSubmenus[x] - 1;
-				}
-				if (key == 2) {  // Se ha pulsado la tecla abajo
-					y++;
-					if (y > numeroDeSubmenus[x] - 1)
-						y = 0;
-				}
-
-				if (key == 3) {  // Se ha pulsado la tecla izquierda
-					x--;
-					if (x > NUM_KEYS)
-						x = numeroDeMenus - 1;
-					y = 0;
-				}
-				if (key == 4) {  // Se ha pulsado la tecla de seleccion
-					tratarOpcion(x, y);
-					tiempo = millis();
-					pinMode(10, INPUT);
-					luzEncendida = true;
-					myMenu.display(); //encendemos la pantalla
-					cursorActivo = true;
-					myMenu.blink(); // Mostramos el cursor parpadeando
-				}
-				myMenu.posicionActual(tituloMenu[x],
-						tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
-			}
+	key=lecturaPulsador();
+	if (key != -1) {
+		tiempo = millis();
+		if (key == 0) {  // Se ha pulsado la tecla derecha
+			x++;
+			if (x > numeroDeMenus - 1)
+				x = 0;
+			y = 0;
 		}
+		if (key == 1) {   // Se ha pulsado la tecla arriba
+			y--;
+			if (y > NUM_KEYS)
+				y = numeroDeSubmenus[x] - 1;
+		}
+		if (key == 2) {  // Se ha pulsado la tecla abajo
+			y++;
+			if (y > numeroDeSubmenus[x] - 1)
+				y = 0;
+		}
+
+		if (key == 3) {  // Se ha pulsado la tecla izquierda
+			x--;
+			if (x > NUM_KEYS)
+				x = numeroDeMenus - 1;
+			y = 0;
+		}
+		if (key == 4) {  // Se ha pulsado la tecla de seleccion
+			tratarOpcion(x, y);
+			tiempo = millis();
+			pinMode(10, INPUT);
+			luzEncendida = true;
+			pantallaEncendida=true;
+			myMenu.display(); //encendemos la pantalla
+			cursorActivo = true;
+			myMenu.blink(); // Mostramos el cursor parpadeando
+		}
+		myMenu.posicionActual(tituloMenu[x],
+				tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
 	}
-	delay(50);
 }
 
 void tratarRespuestaGprs() {
@@ -384,16 +398,18 @@ void tratarRespuestaGprs() {
 #ifndef RELEASE_FINAL
 		zonas.imprimirZonas();
 #endif
-		if (zonas.getEstadoPrimeraVez(alarma) == false) //salta la alarma se establece la duracion
-		{
-			zonas.setEstadoPrimeraVez(alarma);  //cambiamos es estado
-			gprs.iniciarRiegoZona(alarma);
-			gprs.establecerHoraFin(zonas.getZonaDeRiego(alarma));
-		} else    // salta la alarma porque ha terminado el tiempo de riego
-		{
-			zonas.setEstadoPrimeraVez(alarma);    //cambiamos es estado
-			gprs.pararRiegoZona(alarma);
-			gprs.establecerHoraInicio(zonas.getZonaDeRiego(alarma));
+		if (!gprs.getProblemaEnZona(alarma)){
+			if (zonas.getEstadoPrimeraVez(alarma) == false) //salta la alarma se establece la duracion
+			{
+				zonas.setEstadoPrimeraVez(alarma);  //cambiamos es estado
+				gprs.iniciarRiegoZona(alarma);
+				gprs.establecerHoraFin(zonas.getZonaDeRiego(alarma));
+			} else    // salta la alarma porque ha terminado el tiempo de riego
+			{
+				zonas.setEstadoPrimeraVez(alarma);    //cambiamos es estado
+				gprs.pararRiegoZona(alarma);
+				gprs.establecerHoraInicio(zonas.getZonaDeRiego(alarma));
+			}
 		}
 #ifndef RELEASE_FINAL
 		zonas.imprimirZonas();
@@ -470,10 +486,11 @@ bool tratarRespuestaSerial() {
 		salidaRespuesta = false;
 	}
 	if (tratarRespuesta.startsWith("L:")) {
+		byte pos = (tratarRespuesta.charAt(2)-48);
 #ifndef RELEASE
 		Serial << F("dentro de Lectura:") << endl;
 #endif
-		leerEEPROM();
+		leerEEPROM(pos);
 #ifndef RELEASE
 		Serial << F("fuera de lectura:") << endl;
 #endif
@@ -496,7 +513,7 @@ int freeRam() {
 #endif
 }
 
-void leerEEPROM(void) {
+void leerEEPROM(byte pos) {
 #ifndef RELEASE
 	byte valor;
 	Serial << endl
@@ -511,7 +528,12 @@ void leerEEPROM(void) {
 			<< F(
 					"---------------------------------------------------------------")
 			<< endl;
-	for (int i = 0; i < 320; i++) {
+	int limite;
+	if (pos==0)
+		limite =320;
+	else
+		limite = pos*16;
+	for (int i = 0; i < limite; i++) {
 		valor = EEPROM.read(i);
 		if (i > 0 && i % 32 == 0) {
 			Serial << endl;

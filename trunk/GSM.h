@@ -5,9 +5,10 @@
 
 #include "Riego.h"
 #include "zonasDeRiego.h"
+#include "miEEPROM.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
-#define GSM_LIB_VERSION_MENOR "5.2"
+#define GSM_LIB_VERSION_MENOR "5.3"
 
 #define GSM_LIB_VERSION GSM_LIB_VERSION_MAYOR"."GSM_LIB_VERSION_MENOR
 
@@ -49,6 +50,9 @@ public:
     void pararRiegoZona(byte numeroAlarma);
     void inicializaAlarmas(zonasDeRiego * zonas);
     void valvulaPrincipal(bool estado);
+    bool isActivo(void);
+    bool getProblemaEnZona(byte zona);
+    void setProblemaEnZona(byte zona);
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
 
