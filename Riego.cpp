@@ -5,14 +5,15 @@
 #include "zonasDeRiego.h"
 #include "miEEPROM.h"
 
-const byte numeroDeMenus = 5;
+const byte numeroMenusMaximo = 5;
+byte numeroMenusActivos = 3;
 const byte numeroMaximoDeSubmenus = 4;
 
 //FLASH_STRING_ARRAY(tituloMenu,PSTR("1 Configuración"),PSTR("2 Información"), PSTR("3  Menu 3"),PSTR("4  Menu 4"),PSTR("5  Menu 5"));
-const char tituloMenu[numeroDeMenus][17] = { "1 Configuracion", "2 Infomacion",
-		"3 Reinicia Zona", "4  Menu 4       ", "5  Menu 5       " };
+const char tituloMenu[numeroMenusMaximo][17] = { "1 Configuracion", "2 Infomacion",
+		"3 Reinicia Zona", "Reinica Manual", "5  Menu 5       " };
 
-byte numeroDeSubmenus[numeroDeMenus] = { 4, 2, 4, 1, 4 };
+byte numeroDeSubmenus[numeroMenusMaximo] = { 4, 2, 4, 1, 4 };
 
 /*FLASH_STRING_ARRAY(tituloSubmenu,PSTR("1.1 xxxxxxxxxx"),PSTR("1.2 Destino SMS"),PSTR("1.3 Fecha"),PSTR("1.4 Hora"),
  PSTR("2.1 Fecha/Hora"),PSTR("2.2 Destino SMS"),PSTR(""),PSTR(""),
@@ -20,10 +21,10 @@ byte numeroDeSubmenus[numeroDeMenus] = { 4, 2, 4, 1, 4 };
  PSTR("4.1 Submenu 1"),PSTR(""),PSTR(""),PSTR(""),
  PSTR("5.1 Submenu 1"),PSTR("5.2 Submenu 2"),PSTR("5.3 Submenu 3"),PSTR("5.4 Submenu 4"));
  */
-const char tituloSubmenu[numeroDeMenus * numeroMaximoDeSubmenus][17] = {
+const char tituloSubmenu[numeroMenusMaximo * numeroMaximoDeSubmenus][17] = {
 		"1.1 xxxxxxxxxx", "1.2 Destino SMS", "1.3 Fecha", "1.4 Hora",
 		"2.1 Fecha/Hora", "2.2 Destino SMS", "", "", "3.1 Zona 1",
-		"3.2 Zona 2", "3.3 Zona 3", "3.4 Zona 4", "4.1 Submenu 1", "", "", "", "5.1 Submenu 1",
+		"3.2 Zona 2", "3.3 Zona 3", "3.4 Zona 4", "Pricipal", "", "", "", "5.1 Submenu 1",
 		"5.2 Submenu 2", "5.3 Submenu 3", "5.4 Submenu 4" };
 
 unsigned int adc_key_val[5] = { 50, 200, 400, 600, 800 };
@@ -34,14 +35,19 @@ boolean cursorActivo = false;
 boolean pantallaEncendida = true;
 unsigned long tiempo;
 unsigned long tiempo2;
-byte x = 0;
-byte y = 0;
+int x = 0;
+int y = 0;
 String tratarRespuesta;
 char* cadena;
 char aux[33];
-Menu myMenu("", numeroDeMenus);
+Menu myMenu("", numeroMenusMaximo);
 GSM gprs;
 zonasDeRiego zonas;
+volatile long numeroPulsos=0;
+unsigned long totalPulsos=0;
+unsigned long anteriorTotalPulsos=0;
+boolean regando=false;
+boolean funcionamiento=true;
 
 char linea1[16];
 char linea2[16];
@@ -56,7 +62,46 @@ int get_key(unsigned int input) {
 	return -1;
 }
 
+void aumentaPulso(void){
+	numeroPulsos++;
+}
+
 void controlTiempo(void) {
+	if (funcionamiento && (millis() - tiempo2) > 5000 ){// cada 20 segundos comprueba el agua consumida
+		tiempo2=millis();
+		noInterrupts();
+		totalPulsos+=numeroPulsos;
+		numeroPulsos=0;
+		interrupts();
+		Serial <<F("Total pulsos: ")<<totalPulsos<<F(" total pulsos anterior: ")<<anteriorTotalPulsos<<endl;
+		if (totalPulsos>anteriorTotalPulsos){
+			anteriorTotalPulsos=totalPulsos;
+			Serial <<F("actualizando anterior")<<endl;
+
+			if (regando){
+				//obtenemos el total de litros de todas las zonas
+				//convertimos pulso en litros
+				//si litros>totalLitros
+				//	bloqueamos zonas afectadas
+				//	enviamos sms
+				//  paramos zonas riego efectadas
+				//  actualizamos valor regando
+
+			}else{ // detectado rebenton sin estar regando
+
+				// cerrar principal
+				gprs.valvulaPrincipal(CERRAR);
+				// enviar sms
+				gprs.enviaSMSErrorPrincipal();
+				gprs.setProblemaEnZona(PRINCIPAL,true);
+				funcionamiento=false;
+				x=0;y=0;
+				//paso a modo manual
+				numeroMenusActivos++;
+
+			}
+		}
+	}
 	if (millis() - tiempo > 15000) { // a los 15 segundos apagamos el display
 		pantallaEncendida=false;
 		myMenu.noDisplay();
@@ -76,8 +121,12 @@ void controlTiempo(void) {
 
 void estadoProblemaEnZona(byte zona){
 	zona=zona-7;
-	strcpy_P(linea1, PSTR("Estado zona:    "));
-	linea1[13]=zona+48;
+	if (zona==PRINCIPAL){
+		strcpy_P(linea1, PSTR("Estado principal:"));
+	}else{
+		strcpy_P(linea1, PSTR("Estado zona:    "));
+		linea1[13]=zona+48;
+	}
 	myMenu.linea1(linea1);
 	if (!gprs.getProblemaEnZona(zona)){
 		strcpy_P(linea2, PSTR("ZONA correcta "));
@@ -94,7 +143,20 @@ void estadoProblemaEnZona(byte zona){
 			}
 		} while (!salida);
 		//guardamos valor en eprom
-		gprs.setProblemaEnZona(zona);
+		if (zona==PRINCIPAL){
+			gprs.valvulaPrincipal(ABRIR);
+			noInterrupts();
+			numeroPulsos=0;
+			numeroMenusActivos--;
+			totalPulsos=0;
+			x=0;y=0;
+			anteriorTotalPulsos=0;
+			interrupts();
+		}else{
+			//gprs.valvulaZona(zona);
+		}
+		gprs.setProblemaEnZona(zona,false);
+		funcionamiento=true;
 		strcpy_P(linea2, PSTR("ZONA correcta "));
 		myMenu.linea2(linea2);
 	}
@@ -176,6 +238,7 @@ void tratarOpcion(byte x, byte y) {
 	case 9:
 	case 10:
 	case 11:
+	case 12:
 		estadoProblemaEnZona(opcion);
 		break;
 	}
@@ -326,10 +389,11 @@ void setup() {
 	myMenu.posicionActual(tituloMenu[x],
 			tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
 #ifndef RELEASE_FINAL
-	zonas.imprimirZonas();
+	//zonas.imprimirZonas();
 #endif
-	gprs.inicializaAlarmas(&zonas);
+	//gprs.inicializaAlarmas(&zonas);
 	tiempo = millis();
+	attachInterrupt(0, aumentaPulso, FALLING); // interrupcion 0 habilitada en el pin 2 sobre el metodo aumentaPulso en el flanco de bajada
 
 }
 
@@ -338,16 +402,17 @@ void loop() {
 	controlTiempo();
 	key=lecturaPulsador();
 	if (key != -1) {
+		Serial <<F("valor x: ")<<x<<F(" valor y: ")<<y<<endl;
 		tiempo = millis();
 		if (key == 0) {  // Se ha pulsado la tecla derecha
 			x++;
-			if (x > numeroDeMenus - 1)
+			if (x > numeroMenusActivos - 1)
 				x = 0;
 			y = 0;
 		}
 		if (key == 1) {   // Se ha pulsado la tecla arriba
 			y--;
-			if (y > NUM_KEYS)
+			if (y < 0 )
 				y = numeroDeSubmenus[x] - 1;
 		}
 		if (key == 2) {  // Se ha pulsado la tecla abajo
@@ -358,8 +423,8 @@ void loop() {
 
 		if (key == 3) {  // Se ha pulsado la tecla izquierda
 			x--;
-			if (x > NUM_KEYS)
-				x = numeroDeMenus - 1;
+			if (x < 0)
+				x = numeroMenusActivos - 1;
 			y = 0;
 		}
 		if (key == 4) {  // Se ha pulsado la tecla de seleccion
@@ -425,6 +490,7 @@ void tratarRespuestaGprs() {
 }
 
 void comandoGPRS(void) {
+#ifndef SIMPLE
 	if (gprs.available()) // if date is comming from softwareserial port ==> data is comming from gprs shield
 	{
 		tratarRespuesta = gprs.readString();
@@ -449,6 +515,17 @@ void comandoGPRS(void) {
 
 			gprs.enviaComando(tratarRespuesta);       // write it to the GPRS shield
 		}
+	}
+#endif
+
+#else
+	if (gprs.available()){ // if date is comming from softwareserial port ==> data is comming from gprs shield
+		Serial << F("leyendo del gprs") << endl;
+		Serial << gprs.readString()<<endl;
+	}
+	if (Serial.available()) {// if data is available on hardwareserial port ==> data is comming from PC or notebook
+		Serial << F("escribiendo en gprs") << endl;
+		gprs.println(Serial.readString());
 	}
 #endif
 }

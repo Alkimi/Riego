@@ -4,6 +4,7 @@
 //#define DEBUG_PROCESS
 //#define RELEASE
 //#define RELEASE_FINAL
+#define SIMPLE
 
 #if ARDUINO >= 100
 #include "Arduino.h"
@@ -63,6 +64,9 @@
 
 
  */
+#define ABRIR true
+#define CERRAR false
+#define PRINCIPAL 5
 
 #define RELAY_ON 1
 #define RELAY_OFF 0
@@ -76,7 +80,7 @@
 //#define Relay_6  9
 
 #define RIEGO_VERSION_MAYOR "0" //15088 676 646
-#define RIEGO_VERSION_MENOR "5.2" //20172 651 622
+#define RIEGO_VERSION_MENOR "5.4" //20172 651 622
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
 
 //end of add your includes here

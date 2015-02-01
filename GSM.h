@@ -8,7 +8,7 @@
 #include "miEEPROM.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
-#define GSM_LIB_VERSION_MENOR "5.3"
+#define GSM_LIB_VERSION_MENOR "6.0"
 
 #define GSM_LIB_VERSION GSM_LIB_VERSION_MAYOR"."GSM_LIB_VERSION_MENOR
 
@@ -23,8 +23,7 @@
 
 #define MAX_BUFFER 150
 #define MAX_POSICION_BUFFER MAX_BUFFER-1
-#define abrir true
-#define cerrar false
+
 
 
 class GSM
@@ -37,6 +36,7 @@ public:
     int available(void);
     size_t println(const String &s);
     size_t println(const char c[]);
+    size_t println(char);
     size_t print(const char str[]);
     char * libVer(void);
     String readString(void);
@@ -52,7 +52,8 @@ public:
     void valvulaPrincipal(bool estado);
     bool isActivo(void);
     bool getProblemaEnZona(byte zona);
-    void setProblemaEnZona(byte zona);
+    void setProblemaEnZona(byte zona,bool estado);
+    void enviaSMSErrorPrincipal(void);
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
 
