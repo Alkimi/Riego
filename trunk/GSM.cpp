@@ -51,13 +51,13 @@ void GSM::inicializaAlarmas(zonasDeRiego * zonas){
 
 void GSM::valvulaPrincipal(bool estado){
 	if (estado){
-		enviaComando(F("AT+SGIPI=0,5,1,1;+SGIPO=0,6,1,0"));
+		enviaComando(F("AT+SGPIO=0,5,1,1;+SGPIO=0,6,1,0"));
 	}else{
-		enviaComando(F("AT+SGIPI=0,5,1,0;+SGIPO=0,6,1,1"));
+		enviaComando(F("AT+SGPIO=0,5,1,0;+SGPIO=0,6,1,1"));
 
 	}
 	delay(7000);
-	enviaComando(F("AT+SGIPI=0,5,1,0;+SGIPO=0,6,1,0"));
+	enviaComando(F("AT+SGPIO=0,5,1,0;+SGPIO=0,6,1,0"));
 }
 
 void GSM::establecerZona(t_zonaRiego *DatoZonaDeRiego){
@@ -89,23 +89,65 @@ bool GSM::getProblemaEnZona(byte zona){
 	return (valor!=0x0)?true:false;
 }
 
-void GSM::setProblemaEnZona(byte zona){
+void GSM::setProblemaEnZona(byte zona,bool estado){
 	//invertimos el valor de eprom
-	byte valor= EEPROM.read(16+zona);
-	(valor!=0x0)?valor=0x0:valor=0x1;
-	EEPROM.write(16+zona,valor);
+	/*byte valor= EEPROM.read(16+zona);
+	(valor!=0x0)?valor=0x0:valor=0x1;*/
+	EEPROM.write(16+zona,estado);
+}
+
+void GSM::enviaSMSErrorPrincipal(void){
+	char * aux;
+	char temp;
+	String cadena=F("Se ha producido un rebenton, se cierra la valvula principal. Hay que rearmar manualmente Dia: ");
+	//obtener fecha y hora
+	aux=enviaComando(F("AT+CCLK?"));
+	aux=aux+8;
+	temp=aux[6];
+	aux[6]=aux[0];
+	aux[0]=temp;
+	temp=aux[7];
+	aux[7]=aux[1];
+	aux[1]=temp;
+	aux[8]=0x0;
+	cadena.concat(aux);
+	aux=aux+9;
+	aux[8]=0x0;
+	cadena.concat(F(" Hora: "));
+	cadena.concat(aux);
+	cadena.concat(F(" Pila: "));
+	aux=enviaComando(F("AT+CBTE?"));
+	aux=aux+7;
+	float pila=atof(aux)/1000.00;
+	cadena.concat(pila);
+	cadena.concat(F(" Bateria: "));
+	//obtenemos la eneriga de a bateria
+	pila=12.5;
+	cadena.concat(pila);
+	//obtener numero sms
+	EEPROM.lecturaEeprom16(0, bufferO);
+	//componer sms
+	sprintf(bufferI,"AT+CMGS=\"%s\"",bufferO);
+
+	Serial << F("comando: ")<<bufferI<<endl<<F("cadena: ")<<cadena<<endl;
+	/*//enviar sms
+	enviaComando(bufferI);
+	//envia mensaje
+	println(cadena);
+	//envia final mensaje
+	println((char)26);*/
 }
 
 void GSM::iniciarRiegoZona(byte numeroAlarma){
 	char *cadena;
-	valvulaPrincipal(abrir);
+	valvulaPrincipal(ABRIR);
 	sprintf(bufferO,"AT+SGPIO=0,%d,1,1",numeroAlarma);
 	cadena=enviaComando(bufferO);
 }
 
 void GSM::pararRiegoZona(byte numeroAlarma){
 	char *cadena;
-	valvulaPrincipal(cerrar);
+	valvulaPrincipal(CERRAR);
 	sprintf(bufferO,"AT+SGPIO=0,%d,1,0",numeroAlarma);
 	cadena=enviaComando(bufferO);
 }
@@ -157,6 +199,15 @@ size_t GSM::println(const String &s){
     #endif
 }
 
+size_t GSM::println(char s){
+    #ifndef DEBUG_PROCESS
+	return myPortSerial->println(s);
+    #else
+        return 0;
+    #endif
+}
+
+
 String GSM::readString(void){
     #ifndef DEBUG_PROCESS
         return myPortSerial->readString();
@@ -178,6 +229,7 @@ int GSM::read(void){
 
 char * GSM::enviaComando(const char str[]){
 	println(str);
+	delay(100);
 #ifndef RELEASE_FINAL
 	Serial << F("Comando enviado: ") << str << endl;
 #endif
@@ -186,6 +238,7 @@ char * GSM::enviaComando(const char str[]){
 
 char * GSM::enviaComando(const String &s){
 	println(s);
+	delay(100);
 #ifndef RELEASE_FINAL
 	Serial << F("Comando enviado: ") << s << endl;
 #endif
@@ -194,6 +247,7 @@ char * GSM::enviaComando(const String &s){
 
 char * GSM::procesaEnviaComando(void){
 	limpiaBufferI();
+	limpiaBufferO();
 	long tiempo;
 	tiempo=millis();
 	int contador=0;
@@ -209,10 +263,13 @@ char * GSM::procesaEnviaComando(void){
 			}
 		}
 	}while(millis()-tiempo<1000);
-	if ((bufferI[2]=='E' && bufferI[3]=='R' && bufferI[4]=='R' && bufferI[5]=='O' && bufferI[6]=='R') || (contador ==0)) return NULL;
+
+	Serial <<F("Comando antes de procesar: ") << bufferI<<endl;
 
 	contador=0;
-    for (int i = 2; i<MAX_BUFFER;i++){
+    for (int i = 0; i<MAX_BUFFER;i++){
+      if ((bufferI[i]=='E' && bufferI[i+1]=='R' && bufferI[i+2]=='R' && bufferI[i+3]=='O' && bufferI[i+4]=='R')) return NULL;
+
 	  if (bufferI[i]=='O' && bufferI[i+1]=='K' && bufferI[i+2]==13){
 		  i+=3;
 		  continue;
