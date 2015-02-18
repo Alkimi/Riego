@@ -1,0 +1,63 @@
+salta la alarma
+capturmos valor de alarma
+si no esta regando zona(alarma) 
+	iniciamos riego zona(alarma)
+	|	si no hay rebenton(alarma)
+	|	|	marcamos zona(alarma)  =regando
+	|	|	abrimos zona(alarma)
+	|	|	anulamos alarma(alarma)
+	|	|	creamos alarma(alarma)+duraccion
+	|
+sino
+	paramos riego zona(alarma)
+	|
+	|	marcamos zona(alarma) = no regando
+	|	cerramos zona(alarma)
+	|	anulamos alarma(alarma)	
+	|	creamos alarma(alarma) = inicial
+	|	guardamos valores para informe diario
+fin
+
+estructura
+	hora inicio
+	duraccion
+	intervalo riego
+	regando
+	litros max
+	litros totales
+	activo
+	numero zona/alarma/inidice
+	rebenton
+	
+si tiempo 
+	si litros_actual > litros anterior   // se ha gastado agua
+		si alguna zona regando 
+			litros_actual entre todas zonas regando
+			si rebenton en alguna zona regando
+				cerramos zona
+				|	marcamos zona(alarma) = no regando
+				|	marcamos zona(alarma) = rebenton
+				|	cerramos zona(alarma)
+				|	anulamos alarma(alarma)	
+				|	creamos alarma(alarma) = inicial
+				|	enviamos SMS error zona
+				|     rearmar zona = cierto
+				|     |	guardar en memoria rearmar zona
+				si todas las zonas cerradas
+					 cierre valvula principal
+					 envio sms error principal
+					 rearmar principal = cierto
+					 |	guardar en memoria rearmar principal	
+			
+		sino
+			si linea casa no abierta
+				rebenton principal
+				|    cierre valvula principal
+				|    envio sms error principal
+				|    rearmar principal = cierto
+				|    |	guardar en memoria rearmar principal	
+	sino
+		nada
+		
+	
+	

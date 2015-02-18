@@ -4,7 +4,7 @@
 //#define DEBUG_PROCESS
 //#define RELEASE
 //#define RELEASE_FINAL
-#define SIMPLE
+//#define SIMPLE
 
 #if ARDUINO >= 100
 #include "Arduino.h"
@@ -23,19 +23,6 @@
     #include <LiquidCrystal.h>
     #include <SoftwareSerial.h>
 #endif // DEBUG_PROCESS
-
-   typedef struct
-  {
-		byte numeroZona;
-		byte litrosPorRiego;
-		byte intervaloRiego;
-		byte horaInicio;
-		byte minutoInicio;
-		byte duracion;
-		bool primeraVez;
-
-
-  } t_zonaRiego;
 
 //pins usados
 /*

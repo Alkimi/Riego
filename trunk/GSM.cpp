@@ -20,32 +20,150 @@ GSM::GSM()
         //pinMode(GSM_POWER_ON_OFF,OUTPUT);
         myPortSerial = new SoftwareSerial(GSM_SERIAL_RX, GSM_SERIAL_TX);
         myPortSerial->begin(4800);
-        /*if (!isActivo()){
+        if (!isActivo()){
         	SIM900power();
-        }*/
+        }
     #endif // DEBUG_PROCESS
+}
 
+long GSM::iniciaReloj(void){
+	char *cadena;
+	long horas;
+	long minutos;
+	long segundos;
+	cadena=enviaComando(F("AT+CCLK?"));
+	cadena+=17;
+	cadena[2]=0x0;
+	horas=atol(cadena)*3600;
+	cadena+=3;
+	cadena[2]=0x0;
+	minutos=horas+(atol(cadena)*60);
+	cadena+=3;
+	cadena[2]=0x0;
+	segundos=(minutos+atol(cadena))*1000;
+	return MILLISPORDIA-segundos;
 }
 
 bool GSM::isActivo(void){
-	return (enviaComando(F("AT"))==NULL)?true:false;
+	return true;
+	return (enviaComando(F("AT"))==NULL)?false:true;
 }
 /*
 void GSM::enviaSMS(char *numero,boolean reventon,byte zona,byte litros){
 
 }*/
 
+void GSM::enviaSMSError(byte tipo){
+	    byte valor=tipo;
+	    char vector[9];
+	    if (valor>30){
+	    	valor-=30;
+	    	tipo=3;
+	    }
+	    char * aux;
+		char temp;
+		limpiaSMS();
+		strcat_P(SMS,PSTR("Se ha producido un rebenton, se cierra"));
+		switch (tipo){
+		  case 1: //rebenton general
+			  strcat_P(SMS,PSTR(" la valvula principal. Hay que rearmar"));
+			break;
+		  case 2:
+			  strcpy_P(SMS,PSTR("Todas las zonas necesitan ser rearmadas"));
+		    break;
+		  case 3:  // rebenton en zonas
+			  strcat_P(SMS,PSTR("n las zonas "));
+			int j=0;
+			//se añaden las zonas
+			for (int i=0;i<4;i++){
+				vector[j]=cadena_errores[i];
+				vector[j++]=' ';
+				j++;
+			}
+			strcat(SMS,vector);
+			strcat_P(SMS,PSTR(". Hay que rearmar"));
+			break;
+		}
+		//obtener fecha y hora
+		strcat_P(SMS,PSTR(" manualmente. Dia: "));
+		aux=enviaComando(F("AT+CCLK?"));
+		aux=aux+8;
+		temp=aux[6];
+		aux[6]=aux[0];
+		aux[0]=temp;
+		temp=aux[7];
+		aux[7]=aux[1];
+		aux[1]=temp;
+		aux[8]=0x0;
+		strcat(SMS,aux);
+		strcat_P(SMS,PSTR(" Hora: "));
+		aux=aux+9;
+		aux[8]=0x0;
+		strcat(SMS,aux);
+		strcat_P(SMS,PSTR(" Pila: "));
+		aux=enviaComando(F("AT+CBTE?"));
+		aux=aux+7;
+		float pila=atof(aux)/1000.00;
+		dtostrf(pila, 4, 2, vector);
+		strcat(SMS,vector);
+		//obtenemos la eneriga de a bateria
+		strcat_P(SMS,PSTR(" Bateria: "));
+		dtostrf(energiaBateria(),5,2,vector);
+		strcat(SMS,vector);
+		//obtener numero sms
+		EEPROM.lecturaEeprom16(0, bufferO);
+		//componer sms
+		sprintf(bufferI,"AT+CMGS=\"%s\"",bufferO);
+
+		Serial << F("comando: ")<<bufferI<<endl<<F("cadena: ")<<SMS<<endl;
+		/*//enviar sms
+		enviaComando(bufferI);
+		//envia mensaje
+		println(SMS);
+		//envia final mensaje
+		println((char)26);*/
+
+}
+
+void GSM::enviaSMSErrorTodasLasZonas(){
+	enviaSMSError(2);
+}
+
+float GSM::energiaBateria(void){
+    /*Vmax = 5/R  V  = ((x*5)/1024)*R
+	 23.58
+
+	15 = 3.1803
+	14 = 2.9683
+	13 = 2.7563
+	12 = 2.5443
+	11 = 2.3322
+	10 = 2.1202
+	*/
+	return (((analogRead(analogPinVoltage)*5.0)/1024)/R);
+
+}
+
+void GSM::enviaSMSErrorZonas(char zonas[4]){
+	for (int i=0;i<4;i++){
+		cadena_errores[i]=zonas[i];
+	}
+	enviaSMSError(3);
+}
+
 char * GSM::libVer(void)
 {
   return (GSM_LIB_VERSION);
 }
 
-void GSM::inicializaAlarmas(zonasDeRiego * zonas){
+void GSM::inicializaAlarmas(controlZona * zonas){
 	enviaComando(F("AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5"));
 	for (int i=0;i<zonas->getNumeroZonasRiego();i++){
-		sprintf(bufferO,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",zonas->getZonaDeRiego(i)->horaInicio,
-		zonas->getZonaDeRiego(i)->minutoInicio,zonas->getZonaDeRiego(i)->numeroZona,zonas->getZonaDeRiego(i)->intervaloRiego);
-		enviaComando(bufferO);
+		if (zonas->isZonaActiva(i)){
+			sprintf(bufferO,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",
+					zonas->getHoraZona(i),zonas->getMinutoZona(i),i,zonas->getIntervaloZona(i));
+			enviaComando(bufferO);
+		}
 	}
 }
 
@@ -60,34 +178,32 @@ void GSM::valvulaPrincipal(bool estado){
 	enviaComando(F("AT+SGPIO=0,5,1,0;+SGPIO=0,6,1,0"));
 }
 
-void GSM::establecerZona(t_zonaRiego *DatoZonaDeRiego){
-	char *cadena;
-	sprintf(bufferO,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",DatoZonaDeRiego->horaInicio,
-			DatoZonaDeRiego->minutoInicio,DatoZonaDeRiego->numeroZona,DatoZonaDeRiego->intervaloRiego);
-	cadena=enviaComando(bufferO);
+void GSM::establecerZona(controlZona *zonas, byte alarma){
+	sprintf(bufferO,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",zonas->getHoraZona(alarma),zonas->getMinutoZona(alarma),zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
+	enviaComando(bufferO);
 }
 
-void GSM::establecerHoraFin(t_zonaRiego *DatoZonaDeRiego){
-	char *cadena;
-	int tiempo = (DatoZonaDeRiego->horaInicio*60)+DatoZonaDeRiego->minutoInicio+DatoZonaDeRiego->duracion;
+void GSM::establecerHoraFin(controlZona *zonas,byte alarma){
+	int tiempo = (zonas->getHoraZona(alarma)*60)+zonas->getMinutoZona(alarma)+zonas->getDuracionZona(alarma);
 	byte hora = tiempo/60;
 	if (hora>24) hora =hora-24;
-	sprintf(bufferO,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",DatoZonaDeRiego->numeroZona,hora,tiempo%60,DatoZonaDeRiego->numeroZona,0);
-	cadena=enviaComando(bufferO);
+	sprintf(bufferO,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",zonas->getNumeroZona(alarma),hora,tiempo%60,zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
+	enviaComando(bufferO);
 }
 
-void GSM::establecerHoraInicio(t_zonaRiego *DatoZonaDeRiego){
-	char *cadena;
-	sprintf(bufferO,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",DatoZonaDeRiego->numeroZona,DatoZonaDeRiego->horaInicio,
-			DatoZonaDeRiego->minutoInicio,DatoZonaDeRiego->numeroZona,DatoZonaDeRiego->intervaloRiego);
-	cadena=enviaComando(bufferO);
-}
+void GSM::establecerHoraInicio(controlZona *zonas, byte alarma){
+	sprintf(bufferO,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",
+			zonas->getNumeroZona(alarma),zonas->getHoraZona(alarma),
+			zonas->getMinutoZona(alarma),zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
 
+	enviaComando(bufferO);
+}
+/*
 bool GSM::getProblemaEnZona(byte zona){
 	//leemos el varlo de la epron de la zona
 	byte valor= EEPROM.read(16+zona);
 	return (valor!=0x0)?true:false;
-}
+}*/
 
 void GSM::setProblemaEnZona(byte zona,bool estado){
 	//invertimos el valor de eprom
@@ -97,45 +213,7 @@ void GSM::setProblemaEnZona(byte zona,bool estado){
 }
 
 void GSM::enviaSMSErrorPrincipal(void){
-	char * aux;
-	char temp;
-	String cadena=F("Se ha producido un rebenton, se cierra la valvula principal. Hay que rearmar manualmente Dia: ");
-	//obtener fecha y hora
-	aux=enviaComando(F("AT+CCLK?"));
-	aux=aux+8;
-	temp=aux[6];
-	aux[6]=aux[0];
-	aux[0]=temp;
-	temp=aux[7];
-	aux[7]=aux[1];
-	aux[1]=temp;
-	aux[8]=0x0;
-	cadena.concat(aux);
-	aux=aux+9;
-	aux[8]=0x0;
-	cadena.concat(F(" Hora: "));
-	cadena.concat(aux);
-	cadena.concat(F(" Pila: "));
-	aux=enviaComando(F("AT+CBTE?"));
-	aux=aux+7;
-	float pila=atof(aux)/1000.00;
-	cadena.concat(pila);
-	cadena.concat(F(" Bateria: "));
-	//obtenemos la eneriga de a bateria
-	pila=12.5;
-	cadena.concat(pila);
-	//obtener numero sms
-	EEPROM.lecturaEeprom16(0, bufferO);
-	//componer sms
-	sprintf(bufferI,"AT+CMGS=\"%s\"",bufferO);
-
-	Serial << F("comando: ")<<bufferI<<endl<<F("cadena: ")<<cadena<<endl;
-	/*//enviar sms
-	enviaComando(bufferI);
-	//envia mensaje
-	println(cadena);
-	//envia final mensaje
-	println((char)26);*/
+	enviaSMSError(1);
 }
 
 void GSM::iniciarRiegoZona(byte numeroAlarma){
@@ -164,67 +242,35 @@ void GSM::SIM900power(void) // no funciona
 }
 
 int GSM::available(void){
-    #ifndef DEBUG_PROCESS
         return myPortSerial->available();
-    #else
-        return true;
-    #endif
 }
 
 
 size_t GSM::print(const char str[])
 {
-    #ifndef DEBUG_PROCESS
         return myPortSerial->write(str);
-    #else
-        return 0;
-    #endif
-
 }
 
 size_t GSM::println(const char c[]){
-    #ifndef DEBUG_PROCESS
         return myPortSerial->println(c);
-    #else
-        return 0;
-    #endif
-
 }
 
 size_t GSM::println(const String &s){
-    #ifndef DEBUG_PROCESS
 	return myPortSerial->println(s);
-    #else
-        return 0;
-    #endif
 }
 
 size_t GSM::println(char s){
-    #ifndef DEBUG_PROCESS
 	return myPortSerial->println(s);
-    #else
-        return 0;
-    #endif
 }
 
 
 String GSM::readString(void){
-    #ifndef DEBUG_PROCESS
         return myPortSerial->readString();
-    #else
-        return "";
-    #endif
-
 }
 
 
 int GSM::read(void){
-    #ifndef DEBUG_PROCESS
         return myPortSerial->read();
-    #else
-        return 0;
-    #endif
-
 }
 
 char * GSM::enviaComando(const char str[]){
@@ -263,9 +309,6 @@ char * GSM::procesaEnviaComando(void){
 			}
 		}
 	}while(millis()-tiempo<1000);
-
-	Serial <<F("Comando antes de procesar: ") << bufferI<<endl;
-
 	contador=0;
     for (int i = 0; i<MAX_BUFFER;i++){
       if ((bufferI[i]=='E' && bufferI[i+1]=='R' && bufferI[i+2]=='R' && bufferI[i+3]=='O' && bufferI[i+4]=='R')) return NULL;
@@ -294,14 +337,20 @@ char * GSM::procesaEnviaComando(void){
 
 
 void GSM::limpiaBufferI(void){
-	for (byte i=0;i<MAX_POSICION_BUFFER;i++){
-		bufferI[i]=0;
+	for (byte i=0;i<MAX_BUFFER;i++){
+		bufferI[i]=0x0;
 	}
 }
 
 void GSM::limpiaBufferO(void){
-	for (byte i=0;i<MAX_POSICION_BUFFER;i++){
-		bufferO[i]=0;
+	for (byte i=0;i<MAX_BUFFER;i++){
+		bufferO[i]=0x0;
+	}
+}
+
+void GSM::limpiaSMS(void){
+	for (byte i=0;i<MAX_BUFFER_SMS;i++){
+		SMS[i]=0x0;
 	}
 }
 

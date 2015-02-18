@@ -2,18 +2,18 @@
 #include "Riego.h"
 #include "GSM.H"
 #include "Menu.h"
-#include "zonasDeRiego.h"
 #include "miEEPROM.h"
+#include "controlZona.h"
 
 const byte numeroMenusMaximo = 5;
-byte numeroMenusActivos = 3;
-const byte numeroMaximoDeSubmenus = 4;
+byte numeroMenusActivos = 4;
+const byte numeroMaximoDeSubmenus = 5;
 
 //FLASH_STRING_ARRAY(tituloMenu,PSTR("1 Configuración"),PSTR("2 Información"), PSTR("3  Menu 3"),PSTR("4  Menu 4"),PSTR("5  Menu 5"));
 const char tituloMenu[numeroMenusMaximo][17] = { "1 Configuracion", "2 Infomacion",
-		"3 Reinicia Zona", "Reinica Manual", "5  Menu 5       " };
+		"3 Riego manual","4 Reinicia Zona", "Reinica Manual"};
 
-byte numeroDeSubmenus[numeroMenusMaximo] = { 4, 2, 4, 1, 4 };
+byte numeroDeSubmenus[numeroMenusMaximo] = { 4, 2, 4, 4, 1 };
 
 /*FLASH_STRING_ARRAY(tituloSubmenu,PSTR("1.1 xxxxxxxxxx"),PSTR("1.2 Destino SMS"),PSTR("1.3 Fecha"),PSTR("1.4 Hora"),
  PSTR("2.1 Fecha/Hora"),PSTR("2.2 Destino SMS"),PSTR(""),PSTR(""),
@@ -22,10 +22,11 @@ byte numeroDeSubmenus[numeroMenusMaximo] = { 4, 2, 4, 1, 4 };
  PSTR("5.1 Submenu 1"),PSTR("5.2 Submenu 2"),PSTR("5.3 Submenu 3"),PSTR("5.4 Submenu 4"));
  */
 const char tituloSubmenu[numeroMenusMaximo * numeroMaximoDeSubmenus][17] = {
-		"1.1 xxxxxxxxxx", "1.2 Destino SMS", "1.3 Fecha", "1.4 Hora",
-		"2.1 Fecha/Hora", "2.2 Destino SMS", "", "", "3.1 Zona 1",
-		"3.2 Zona 2", "3.3 Zona 3", "3.4 Zona 4", "Pricipal", "", "", "", "5.1 Submenu 1",
-		"5.2 Submenu 2", "5.3 Submenu 3", "5.4 Submenu 4" };
+		"1.1 xxxxxxxxxx", "1.2 Destino SMS", "1.3 Fecha", "1.4 Hora","",
+		"2.1 Fecha/Hora", "2.2 Destino SMS", "", "","",
+		"3.1 Agua Casa","3.2 Zona 1","3.3 Zona 2","3.4 Zona 3","3.5 Zona 4",
+		"4.1 Zona 1","4.2 Zona 2", "4.3 Zona 3", "4.4 Zona 4", "",
+		"Pricipal", "", "", "",""};
 
 unsigned int adc_key_val[5] = { 50, 200, 400, 600, 800 };
 char NUM_KEYS = 5;
@@ -42,12 +43,13 @@ char* cadena;
 char aux[33];
 Menu myMenu("", numeroMenusMaximo);
 GSM gprs;
-zonasDeRiego zonas;
+controlZona ControlZonas;
 volatile long numeroPulsos=0;
 unsigned long totalPulsos=0;
 unsigned long anteriorTotalPulsos=0;
-boolean regando=false;
 boolean funcionamiento=true;
+long reinicio;
+int totalLitrosParicales=0;;
 
 char linea1[16];
 char linea2[16];
@@ -67,28 +69,52 @@ void aumentaPulso(void){
 }
 
 void controlTiempo(void) {
+	if (millis()>reinicio){
+		//reinicia el sistema
+	}
+
 	if (funcionamiento && (millis() - tiempo2) > 5000 ){// cada 20 segundos comprueba el agua consumida
 		tiempo2=millis();
 		noInterrupts();
 		totalPulsos+=numeroPulsos;
 		numeroPulsos=0;
 		interrupts();
-		Serial <<F("Total pulsos: ")<<totalPulsos<<F(" total pulsos anterior: ")<<anteriorTotalPulsos<<endl;
+
 		if (totalPulsos>anteriorTotalPulsos){
+			Serial <<F("Total pulsos: ")<<totalPulsos<<F(" total pulsos anterior: ")<<anteriorTotalPulsos<<endl;
 			anteriorTotalPulsos=totalPulsos;
-			Serial <<F("actualizando anterior")<<endl;
+			Serial <<F("actualizando anterior")<<endl<<F("Regando: ")<< ControlZonas.isRegando()<<endl;
 
-			if (regando){
-				//obtenemos el total de litros de todas las zonas
-				//convertimos pulso en litros
-				//si litros>totalLitros
-				//	bloqueamos zonas afectadas
-				//	enviamos sms
-				//  paramos zonas riego efectadas
-				//  actualizamos valor regando
+			if (ControlZonas.isRegando()){
+				//convertimos pulsos en litros parciales
+			   	//totalLitrosParicales+=(totalPulsos/175);
+				totalLitrosParicales=totalPulsos;
+			   	totalPulsos=0;
+			   	anteriorTotalPulsos=0;
 
+			   	//obtenemos el total de litros de todas las zonas
+			   	Serial << F("Total litros: ")<<ControlZonas.getTotalLitros()<< endl<<F(" maximo litros riego: ")<<ControlZonas.getMaxLitrosRiego()<<endl;
+				if (ControlZonas.isMaxLitrosRiego()){
+					if (ControlZonas.isReventon()){
+						if (ControlZonas.isTodasZonasReventon()){
+							// cerrar principal
+							gprs.valvulaPrincipal(CERRAR);
+							gprs.enviaSMSErrorTodasLasZonas();
+							gprs.setProblemaEnZona(PRINCIPAL,true);
+							funcionamiento=false;
+							x=0;y=0;
+							//paso a modo manual
+							numeroMenusActivos++;
+						}else{
+							//cerramos valvulas afectadas
+							//enviamos sms de zonas cerradas
+							gprs.valvulaPrincipal(CERRAR);
+						}
+					}
+				}
+				ControlZonas.setIncrementaLitros(totalLitrosParicales);
+				totalLitrosParicales=0;
 			}else{ // detectado rebenton sin estar regando
-
 				// cerrar principal
 				gprs.valvulaPrincipal(CERRAR);
 				// enviar sms
@@ -98,7 +124,6 @@ void controlTiempo(void) {
 				x=0;y=0;
 				//paso a modo manual
 				numeroMenusActivos++;
-
 			}
 		}
 	}
@@ -128,7 +153,8 @@ void estadoProblemaEnZona(byte zona){
 		linea1[13]=zona+48;
 	}
 	myMenu.linea1(linea1);
-	if (!gprs.getProblemaEnZona(zona)){
+	if (!ControlZonas.isRegandoZona(zona)){
+	//if (!gprs.getProblemaEnZona(zona)){
 		strcpy_P(linea2, PSTR("ZONA correcta "));
 		myMenu.linea2(linea2);
 	}else{
@@ -389,12 +415,14 @@ void setup() {
 	myMenu.posicionActual(tituloMenu[x],
 			tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
 #ifndef RELEASE_FINAL
-	//zonas.imprimirZonas();
+	ControlZonas.imprimirZonas();
 #endif
-	//gprs.inicializaAlarmas(&zonas);
+	gprs.inicializaAlarmas(&ControlZonas);
+
 	tiempo = millis();
 	attachInterrupt(0, aumentaPulso, FALLING); // interrupcion 0 habilitada en el pin 2 sobre el metodo aumentaPulso en el flanco de bajada
-
+	reinicio = gprs.iniciaReloj();
+	Serial << F("millis hasta fin del dia: ")<<reinicio<<endl;
 }
 
 void loop() {
@@ -445,7 +473,7 @@ void loop() {
 void tratarRespuestaGprs() {
 	//alama
 #ifndef RELEASE
-	Serial << F("dentro de tratarRespuesta GPRS") << endl << F("Cadena recivida: ") << tratarRespuesta << endl;
+	Serial << F("dentro de tratarRespuesta GPRS") << endl;
 
 	/*for (int i = 0;i<tratarRespuesta.length();i++){
 		Serial << F("ASCII:  ") << (byte)tratarRespuesta.charAt(i) << F(" caracter: ") << tratarRespuesta.charAt(i)<< F(" Indice: ")<< i << endl;
@@ -454,30 +482,34 @@ void tratarRespuestaGprs() {
 	}*/
 #endif
 	tratarRespuesta=tratarRespuesta.substring(2,tratarRespuesta.length()-2);
-	if (tratarRespuesta.startsWith(PSTR("+CALV:"))) {
+	if ((tratarRespuesta.charAt(1)=='C' && tratarRespuesta.charAt(2)=='A' && tratarRespuesta.charAt(3)=='L' && tratarRespuesta.charAt(4)=='V')){
 #ifndef RELEASE
 		Serial << F("dentro de CALV") << endl;
 #endif
 
 		byte alarma = ((byte) tratarRespuesta.charAt(7)) - 48;
 #ifndef RELEASE_FINAL
-		zonas.imprimirZonas();
+		ControlZonas.imprimirZonas();
 #endif
-		if (!gprs.getProblemaEnZona(alarma)){
-			if (zonas.getEstadoPrimeraVez(alarma) == false) //salta la alarma se establece la duracion
-			{
-				zonas.setEstadoPrimeraVez(alarma);  //cambiamos es estado
+		if (!ControlZonas.isReventonZona(alarma)){
+			Serial <<F("No hay problema en zona: ")<<alarma<<endl;
+			if (!ControlZonas.isRegandoZona(alarma)){//salta la alarma se establece la duracion
+				Serial <<F("inicio riego")<<endl;
+				ControlZonas.setRegandoZona(alarma,true);
 				gprs.iniciarRiegoZona(alarma);
-				gprs.establecerHoraFin(zonas.getZonaDeRiego(alarma));
+				gprs.establecerHoraFin(&ControlZonas,alarma);
 			} else    // salta la alarma porque ha terminado el tiempo de riego
 			{
-				zonas.setEstadoPrimeraVez(alarma);    //cambiamos es estado
+				Serial <<F("fin riego")<<endl;
+				ControlZonas.setRegandoZona(alarma,false);
 				gprs.pararRiegoZona(alarma);
-				gprs.establecerHoraInicio(zonas.getZonaDeRiego(alarma));
+				gprs.establecerHoraInicio(&ControlZonas,alarma);
 			}
+		}else{
+			Serial <<F("hay problema en zona: ")<<alarma<<F(" no hace nada")<<endl;
 		}
 #ifndef RELEASE_FINAL
-		zonas.imprimirZonas();
+		ControlZonas.imprimirZonas();
 #endif
 #ifndef RELEASE
 		Serial << F("fuera de CALV") << endl;
@@ -494,25 +526,15 @@ void comandoGPRS(void) {
 	if (gprs.available()) // if date is comming from softwareserial port ==> data is comming from gprs shield
 	{
 		tratarRespuesta = gprs.readString();
-#ifndef RELEASE
-		Serial << F("leyendo del gprs") << endl;
-#endif
+		Serial << F("leyendo del gprs: ") <<  tratarRespuesta<< endl;
 		tratarRespuestaGprs();
-#ifndef RELEASE
-		Serial << tratarRespuesta << endl;
-#endif
-		//Serial.println(tratarRespuesta.toCharArray());
 	}
 #ifndef RELEASE_FINAL
 	if (Serial.available()) // if data is available on hardwareserial port ==> data is comming from PC or notebook
 	{
 		tratarRespuesta = Serial.readString();
 		if (tratarRespuestaSerial()) {
-#ifndef RELEASE
-			Serial << F("escribiendo en gprs") << endl << tratarRespuesta
-					<< endl;
-#endif
-
+			Serial << F("escribiendo en gprs: ")<< tratarRespuesta << endl;
 			gprs.enviaComando(tratarRespuesta);       // write it to the GPRS shield
 		}
 	}
@@ -531,25 +553,18 @@ void comandoGPRS(void) {
 }
 
 #ifndef RELEASE_FINAL
-/////////////////////////////////////////////funciones debub
+/////////////////////////////////////////////funciones debug
 bool tratarRespuestaSerial() {
 	bool salidaRespuesta = true;
-#ifndef RELEASE
-	Serial << F("dentro de tratarRespuesta Serial") << endl;
-#endif
+	//borrado de eeprom
 	if (tratarRespuesta.startsWith("ER:")){
 		for (int i = 0;i<1024;i++){
 			EEPROM.write(i,'\x0');
 		}
 	}
+	//escritura en eeprom
 	if (tratarRespuesta.startsWith("E:")) {
-#ifndef RELEASE
-		Serial << F("dentro de Escritura:") << endl;
-#endif
 		byte pos = (tratarRespuesta.charAt(2)-48);
-#ifndef RELEASE
-		Serial << F("valor de pos= ") << pos << endl;
-#endif
 		pos = pos * 16;
 		for (int i = 4; i < tratarRespuesta.length(); i++) {
 			EEPROM.write(pos, (byte) tratarRespuesta.charAt(i));
@@ -557,37 +572,44 @@ bool tratarRespuestaSerial() {
 			pos++;
 			i++;
 		}
-#ifndef RELEASE
-		Serial << F("fuera de Escritura:") << endl;
-#endif
 		salidaRespuesta = false;
 	}
+	//lectura de eeprom
 	if (tratarRespuesta.startsWith("L:")) {
 		byte pos = (tratarRespuesta.charAt(2)-48);
-#ifndef RELEASE
-		Serial << F("dentro de Lectura:") << endl;
-#endif
 		leerEEPROM(pos);
-#ifndef RELEASE
-		Serial << F("fuera de lectura:") << endl;
-#endif
 		salidaRespuesta = false;
 	}
-#ifndef RELEASE
-	Serial << F("fuera de tratarRespuesta Serial") << endl;
-#endif
+
+	//imprimir zonas
+	if (tratarRespuesta.startsWith("I:")) {
+		ControlZonas.imprimirZonas();
+		salidaRespuesta = false;
+	}
+
+	//hora
+	if (tratarRespuesta.startsWith("H:")) {
+		gprs.enviaComando(F("AT+CCLK?"));
+		salidaRespuesta = false;
+	}
+	//alarma
+	if (tratarRespuesta.startsWith("A:")) {
+		gprs.enviaComando(F("AT+CALA?"));
+		salidaRespuesta = false;
+	}
+
+
 	return salidaRespuesta;
+
+
+
 
 }
 
 int freeRam() {
-#ifndef DEBUG_PROCESS
 	extern int __heap_start, *__brkval;
 	int v;
 	return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-#else
-	return 0;
-#endif
 }
 
 void leerEEPROM(byte pos) {
