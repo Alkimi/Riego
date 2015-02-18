@@ -11,20 +11,12 @@
 
 uint8_t miEEPROM::read(int address)
 {
-    #ifndef DEBUG_PROCESS
         return eeprom_read_byte((unsigned char *) address);
-    #else
-        return 1;
-    #endif
 }
 
 void miEEPROM::write(int address, uint8_t value)
 {
-    #ifndef DEBUG_PROCESS
     	eeprom_write_byte((unsigned char *) address, value);
-    #else
-        Serial << F("eeprom write(")<<address<<","<<value<<endl;
-    #endif // DEBUG_PROCESS
 
 }
 
