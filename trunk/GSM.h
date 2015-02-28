@@ -4,8 +4,8 @@
 #define __GSM
 
 #include "Riego.h"
-#include "controlZona.h"
-#include "miEEPROM.h"
+//#include "controlZona.h"
+//#include "miEEPROM.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
 #define GSM_LIB_VERSION_MENOR "6.0"
@@ -21,10 +21,6 @@
 
 #define GSM_POWER_ON_OFF 9
 
-#define analogPinVoltage 1
-
-#define MAX_BUFFER 151
-#define MAX_BUFFER_SMS 161
 #define MILLISPORDIA 86400000
 
 	/* R2    R1     R2 / (R1+R2)       R
@@ -59,7 +55,7 @@ public:
     void valvulaPrincipal(bool estado);
     bool isActivo(void);
    // bool getProblemaEnZona(byte zona);
-    void setProblemaEnZona(byte zona,bool estado);
+   // void setProblemaEnZona(byte zona,bool estado);
     void enviaSMSErrorPrincipal(void);
     long iniciaReloj(void);
     void enviaSMSErrorTodasLasZonas();
@@ -74,12 +70,8 @@ private:
         SoftwareSerial* myPortSerial;
     #endif
     char bufferI[MAX_BUFFER];
-    char bufferO[MAX_BUFFER];
-
-    char SMS[MAX_BUFFER_SMS];
     char cadena_errores[4];
     void limpiaBufferI(void);
-    void limpiaBufferO(void);
     void limpiaSMS(void);
     char *procesaEnviaComando(void);
 };

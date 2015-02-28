@@ -6,7 +6,7 @@
  */
 
 #include "controlZona.h"
-#include "miEEPROM.h"
+//#include "miEEPROM.h"
 
 controlZona::controlZona(){
 	char aux[33];
@@ -24,8 +24,10 @@ controlZona::controlZona(){
 		control[i].intervaloRiego=aux[posicion++];
 		control[i].duracion=aux[posicion++];
 		control[i].litrosTotales=0;
+		control[i].tiempo=0;
 		control[i].regando=false;
 		control[i].reventon=false;
+		control[i].manual=false;
 	}
 	control[0].activa=true;
 	zonasRegando=0;
@@ -71,6 +73,10 @@ bool controlZona::isRegando(void){
 	return false;
 }
 
+bool controlZona::isManualZona(byte zona){
+	return control[zona].manual;
+}
+
 bool controlZona::isRegandoZona(byte zona){
 	return control[zona].regando;
 }
@@ -109,6 +115,7 @@ bool controlZona::setIncrementaLitros(byte litros){
 				if (control[i].litrosTotales>control[i].litrosPorRiego){
 					control[i].reventon=true;
 					reventon= true;
+					setRebentonZona(i,reventon);
 				}
 			}
 		}
@@ -117,12 +124,24 @@ bool controlZona::setIncrementaLitros(byte litros){
 	return reventon;
 
 }
+void controlZona::setRebentonZona(byte zona,bool estado){
+	//invertimos el valor de eprom
+	//byte valor= EEPROM.read(16+zona);
+	//(valor!=0x0)?valor=0x0:valor=0x1;
+	EEPROM.write(16+zona,estado);
+}
 
 void controlZona::setLitrosPorRiegoEnZona(byte zona, byte litros){
 	control[zona].litrosPorRiego=litros;
 	control[zona].activa=true;
 	cuentaZonasActivas();
 
+}
+
+void controlZona::setManualZona(byte zona, bool valor,unsigned long tiempo){
+	control[zona].manual=valor;
+	control[zona].tiempo=tiempo;
+	cuentaZonasManual();
 }
 
 void controlZona::setRegandoZona(byte zona, bool valor){
@@ -133,6 +152,7 @@ void controlZona::setRegandoZona(byte zona, bool valor){
 void controlZona::setReiniciaZona(byte zona){
 	control[zona].regando = false;
 	control[zona].reventon = false;
+	setRebentonZona(zona,false);
 	totalLitros-= control[zona].litrosTotales;
 	if (totalLitros<0){
 		totalLitros=0;
@@ -191,6 +211,15 @@ void controlZona::cuentaZonasReventon(void){
 	}
 }
 
+void controlZona::cuentaZonasManual(void){
+	zonasManual=0;
+	for (int i=1;i<NUMERO_ZONAS;i++){
+		if (control[i].manual){
+			zonasManual++;
+		}
+	}
+}
+
 bool controlZona::isTodasZonasRegando(void){
 	return (zonasActivas==zonasRegando)?true:false;
 }
@@ -203,6 +232,9 @@ bool controlZona::isMaxLitrosRiego(void){
 	return (totalLitros> maxLitrosRiego)?true:false;
 }
 
+unsigned long controlZona::getTiempoZona(byte zona){
+	return control[zona].tiempo;
+}
 
 int controlZona::getTotalLitros(void){
 	return totalLitros;
@@ -214,6 +246,10 @@ int controlZona::getMaxLitrosRiego(void){
 
 byte controlZona::getNumeroZonasRiego(void){
 	return totalZonas;
+}
+
+bool controlZona::isManual(void){
+		return (zonasManual>0)?true:false;
 }
 
 bool controlZona::isZonaActiva(byte zona){

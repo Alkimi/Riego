@@ -1,3 +1,5 @@
+listo
+
 salta la alarma
 capturmos valor de alarma
 si no esta regando zona(alarma) 
@@ -18,7 +20,7 @@ sino
 	|	guardamos valores para informe diario
 fin
 
-estructura
+estructura   listo
 	hora inicio
 	duraccion
 	intervalo riego

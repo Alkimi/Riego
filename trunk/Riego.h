@@ -1,9 +1,8 @@
 #ifndef _Riego_H_
 #define _Riego_H_
 
-//#define DEBUG_PROCESS
-//#define RELEASE
-//#define RELEASE_FINAL
+//#define RELEASE		//26118 + 824 + 440
+//#define RELEASE_FINAL //22172 + 810 + 454
 //#define SIMPLE
 
 #if ARDUINO >= 100
@@ -13,6 +12,11 @@
 #endif
 #include <inttypes.h>
 #include <stdlib.h>
+
+#include "controlZona.h"
+#include "miEEPROM.h"
+
+
 //#include <Time.h>
 #include "Flash.h"
 
@@ -51,9 +55,20 @@
 
 
  */
+
+#define MAX_BUFFER_SMS 161
+#define MAX_BUFFER 151
 #define ABRIR true
 #define CERRAR false
 #define PRINCIPAL 5
+#define UNAHORA 3600000
+#define UNSEGUNDO 1000
+
+//definicion de pines
+#define BOTONERA 0
+#define CURRENT_SENSOR 1
+#define VOLTAJE_BATERIA 2
+
 
 #define RELAY_ON 1
 #define RELAY_OFF 0
@@ -69,6 +84,17 @@
 #define RIEGO_VERSION_MAYOR "0" //15088 676 646
 #define RIEGO_VERSION_MENOR "5.4" //20172 651 622
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
+
+typedef union{  //28106  + 820  411   28360 + 824  438
+	char SMS[MAX_BUFFER_SMS];
+	char buffer[MAX_BUFFER];
+} UBuffer;
+
+typedef union{
+	char aux[34];
+} UBuffer2;
+
+
 
 //end of add your includes here
 #ifdef __cplusplus
@@ -102,9 +128,10 @@ int lecturaPulsador(void);
 bool tratarRespuestaSerial(void); 	//*
 void pruebaRelay(void);				//*
 void leerEEPROM(byte pos);			//*
-int freeRam();						//*
-#endif
 
+#endif
+int freeRam();						//*
+//#endif
 
 //Do not add code below this line
 #endif /* _Riego_H_ */
