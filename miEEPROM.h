@@ -8,12 +8,19 @@
 #ifndef MIEEPROM_H_
 #define MIEEPROM_H_
 
+union dataFloat{
+  byte b[4];
+  float f;
+ };
+
 class miEEPROM {
 public:
-    uint8_t read(int);
-    void write(int, uint8_t);
+    uint8_t read(unsigned int);
+    void write(unsigned int, uint8_t);
     char *lecturaEeprom16(byte posicion, char * direccion);
 	void escrituraEeprom16(byte posicion,const char str[]);
+	float readFloat(unsigned int addr);
+	void writeFloat(unsigned int addr, float x);
 };
 
 extern miEEPROM EEPROM;

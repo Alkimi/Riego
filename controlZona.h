@@ -22,9 +22,11 @@ typedef struct
 	byte numeroZona;
 	byte litrosPorRiego;
 	byte litrosTotales;
+	unsigned long tiempo;
 	bool activa;
 	bool regando;
 	bool reventon;
+	bool manual;
   } t_controlZonas;
 
 
@@ -39,6 +41,9 @@ public:
 	bool isReventon(void);
 	bool isReventonZona(byte zona);
 
+	bool isManualZona(byte zona);
+	bool isManual(void);
+
 	bool isTodasZonasRegando(void);
 	bool isTodasZonasReventon(void);
 
@@ -49,7 +54,9 @@ public:
 	bool setIncrementaLitros(byte litros);
 	void setFinRiegoZona(byte zona);
 	void setRegandoZona(byte zona, bool valor);
+	void setRebentonZona(byte zona,bool estado);
 	void setLitrosPorRiegoEnZona(byte zona,byte litros);
+	void setManualZona(byte zona,bool valor,unsigned long tiempo);
 	void setReiniciaZona(byte zona);
 
 	int getTotalLitros(void);
@@ -60,21 +67,23 @@ public:
 	byte getDuracionZona(byte zona);
 	byte getIntervaloZona(byte zona);
 	byte getNumeroZona(byte zona);
+	unsigned long getTiempoZona(byte zona);
 
 #ifndef RELEASE_FINAL
 	void imprimirZonas(void);
 #endif
 
 private:
-	//byte zonasActivasRegando(void);
 	void cuentaZonasActivas(void);
 	void cuentaZonasRegando(void);
 	void cuentaZonasReventon(void);
+	void cuentaZonasManual(void);
 	t_controlZonas control[NUMERO_ZONAS];
 	byte zonasRegando;
 	byte totalZonas;
 	byte zonasActivas;
 	byte zonasReventon;
+	byte zonasManual;
 	int maxLitrosRiego;
 	int totalLitros;
 };
