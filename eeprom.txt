@@ -1,0 +1,67 @@
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1  
+00 + 3 4 6 5 4 0 1 9 7 5 9         x x x 2 3 1 0                   32
+ 1 x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x     64
+ 2                                                                 96
+ 3                                                                 128
+ 4                                                                 160
+ 5                                                                 192
+ 6                                                                 224
+ 7                                                                 256
+ 8                                                                 288
+ 9                                                                 320
+10 # # # # # # # # # # # A T + C A L D = 1 ; + C A L D = 2 ; + C A 352 
+ 1 L D = 3 ; + C A L D = 4 ; + C A L D = 5 # A T + S G P I O = 0 , 384
+ 2 5 , 1 , X ; + S G P I O = 0 , 6 , 1 , X # A T # A T + C B T E ? 416
+ 3 # A T + C C L K ? # E s t a d o   p r i n c i p a l : # E s t a 448
+ 4 d o   z o n a :       #         R E I N I C I A R       # Z O N 480
+ 5 A   c o r r e c t a   # F e c h a :   # F e c h a   e r r o n e 512
+ 6 a # H o r a   e r r o n e a # Z o n a s   a c t i v a s     # Z 544
+ 7 o n a   x   a c t .   N O   #                               # E 576
+ 8 N   C E N   D   I   D   O   #   A   P   A   G   A   D   O   #   608
+ 9       I N I C I A N D O       #   B A T E R I A   B A J A   # R 640                                                                 
+20 i e g o   M a n u a l     # D e s t i n o   S M S : # S E G U R 672
+ 1 I D A D :   N O # C o n t r a s e ñ a # V a l o r :   0 0 0 0 # 704
+ 2   r e c a r g a d a ,   s e   r e a n u d a   e l   f u n c i o 736
+ 3 n a m i e n t o   n o r m a l . # S e   h a   p r o d u c i d o 768 
+ 4   u n   r e b e n t o n ,   s e   c i e r r a #   l a   v a l v 800
+ 5 u l a   p r i n c i p a l # T o d a s   l a s   z o n a s   n e 832
+ 6 c e s i t a n   s e r   r e a r m a d a s # n   l a s   z o n a 864
+ 7 s   # .   H a y   q u e   r e a r m a r #   m a n u a l m e n t 896
+ 8 e . #   D i a :   #   H o r a :   #   P i l a :   #   B a t e r 928
+ 9 i a :   # L a   b a t e r i a   p r i n c i p a l   e s t a #   960
+30 b a j a ,   s i   l l e g a   a l #   e n #   n i v e l   c r i 992
+ 1 t i c o   s e   a p a g a r a   e l   s i s t e m a . #   V # # 1024
+ 
+ 
+p16   = bateria critica, valor 0 1
+p17   = sms enviado de bateria baja, valor 0 1
+p18   = contraseña, valor 0 1
+p19   = primer valor contraseña
+p20   = segundo valor contraseña
+p21   = tercer valor de contraseña
+p22   = cuarto valor de contraseña 
+p32-62= valores de zona de reigo, 5 zonas: activa, litros, hora, mintuos, intervalo, duracion
+
+bloque 0 : +34654019759
+
+bloque 20: ###########AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5#AT+SGPIO=0,
+bloque 24: 5,1,X;+SGPIO=0,6,1,X#AT#AT+CBTE?#AT+CCLK?#Estado principal:#Esta
+bloque 28: do zona:    #   REINICIAR   #ZONA correcta #Fecha: #Fecha errone
+Bloque 32: a#Hora erronea#Zonas activas  #Zona x act. NO #               #E 
+bloque 36: N CEN D I D O # A P A G A D O #    INICIANDO   # BATERIA BAJA #R
+bloque 40: iego Manual  #Destino SMS:#SEGURIDAD: NO#Contraseña#Valor: 0000#
+bloque 44:  recargada, se reanuda el funcionamiento normal.#Se ha producido
+bloque 48:  un rebenton, se cierra# la valvula principal#Todas las zonas ne
+bloque 52: cesitan ser rearmadas#n las zonas #. Hay que rearmar# manualment
+bloque 56: e.# Dia: # Hora: # Pila: # Bateria: #La bateria principal esta# 
+bloque 60: baja, si llega al# en# nivel critico se apagara el sistama.# V##
+
+Se ha producido un rebenton, se cierra la valvula principal. Hay que rearmar manualmente. Dia: 02/05/15 Hora: 16:02:08 Pila: 2.97 Bateria: 10.70 V
+Todas las zonas necesitan ser rearmadas manualmente. Dia: 02/05/15 Hora: 16:02:08 Pila: 2.97 Bateria: 10.70 V
+Se ha producido un rebenton, se cierran las zonas x x x x.  Hay que rearmar manualmente.  Dia: 02/05/15 Hora: 16:02:08 Pila: 2.97 Bateria: 10.70 V
+La bateria principal esta baja, si llega al nivel critico se apagara el sistama. Dia: 02/05/15 Hora: 16:02:08 Pila: 2.97 Bateria: 10.70 V
+La bateria principal esta recargada, se reanuda el funcionamiento normal. Dia: 02/05/15 Hora: 16:02:11 Pila: 2.97 Bateria: 13.15 V
+La bateria principal esta en nivel critico se apagara el sistama. Dia: 02/05/15 Hora: 16:04:00 Pila: 2.97 Bateria: 13.19 V 
+  
+28616

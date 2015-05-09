@@ -21,6 +21,17 @@ public:
 	void escrituraEeprom16(byte posicion,const char str[]);
 	float readFloat(unsigned int addr);
 	void writeFloat(unsigned int addr, float x);
+	boolean borradoEEPROM();
+	boolean escrituraPosicionValor(const char c[]);
+	boolean lecturaContenidoEEPROM(const char c[]);
+	boolean escrituraEEPROM(const char c[]);
+	int leeCadenaEEPROM(int posicion,  char c[]);
+
+	boolean iniciaZonas();
+
+private:
+	  boolean contenidoEEPROM(byte pos, boolean tipo);
+
 };
 
 extern miEEPROM EEPROM;

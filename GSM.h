@@ -23,11 +23,22 @@
 
 #define MILLISPORDIA 86400000
 
-	/* R2    R1     R2 / (R1+R2)       R
-		2680 9960  2680/(9960+2680) = 0.212025*/
-#define R 0.212025
+/* R2    R1     R2 / (R1+R2)       R
+	3280 9960  3280/(9960+3280) = 0.247734
 
+   1/0.247734 = 4.0367
 
+  Vmax = 5/R  V  = ((x*5)/1024)*(1/R)
+	 20.1632
+
+	15 = 762   3.72
+	14 = 711   3.48
+	13 = 660   3.22
+	12 = 610   2.98
+	11 = 559   2.73
+	10 = 508   2.49
+*/
+#define DIVISORTENSION  0.0197435  //(5.0/1023)* 4.04
 
 class GSM
 {
@@ -62,16 +73,22 @@ public:
     void enviaSMSErrorZonas(char zona[6]);
     void enviaSMSError(byte tipo);
     float energiaBateria(void);
+    void setTiempoValvula(unsigned long tiempo);
+    unsigned long getTiempoValvula();
+    void reiniciaValvula(void);
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
+    void limpiaBufferI(void);
 
 private:
     #ifndef DEBUG_PROCESS
         SoftwareSerial* myPortSerial;
     #endif
     char bufferI[MAX_BUFFER];
-    char cadena_errores[4];
-    void limpiaBufferI(void);
+    unsigned long tiempoValvula;
+    boolean cadena_errores[4];
+    boolean principalAbierta;
+
     void limpiaSMS(void);
     char *procesaEnviaComando(void);
 };

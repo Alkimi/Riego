@@ -67,6 +67,9 @@ public:
 	byte getDuracionZona(byte zona);
 	byte getIntervaloZona(byte zona);
 	byte getNumeroZona(byte zona);
+	byte getLitrosPorRiegoZona(byte zona);
+
+	byte getNumeroZonasActivas();
 	unsigned long getTiempoZona(byte zona);
 
 #ifndef RELEASE_FINAL

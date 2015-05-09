@@ -8,16 +8,21 @@
 #include "controlZona.h"
 //#include "miEEPROM.h"
 
-controlZona::controlZona(){
-	char aux[33];
-	char * aux2= &aux[16];
-	byte posicion=0;
-	EEPROM.lecturaEeprom16(4,aux);
-	EEPROM.lecturaEeprom16(5,aux2);
+extern UBuffer2 buffer2;
 
-	for (int i=0;i<NUMERO_ZONAS;i++){
+controlZona::controlZona(){
+	char *aux = buffer2.aux;
+	char *aux2 = &buffer2.aux[16];
+	byte posicion=0;
+	EEPROM.lecturaEeprom16(2,aux);
+	EEPROM.lecturaEeprom16(3,aux2);
+
+	for (byte i=0;i<NUMERO_ZONAS;i++){
 		control[i].numeroZona =i;
-		control[i].activa=false;
+		control[i].activa= aux[posicion++]==0x0?false:true;
+		if (control[i].activa==true){
+			zonasActivas++;
+		}
 		control[i].litrosPorRiego=aux[posicion++];
 		control[i].horaInicio=aux[posicion++];
 		control[i].minutoInicio=aux[posicion++];
@@ -31,39 +36,24 @@ controlZona::controlZona(){
 	}
 	control[0].activa=true;
 	zonasRegando=0;
-	zonasActivas=0;
 	zonasReventon=0;
 	maxLitrosRiego=0;
 	totalLitros=0;
+	zonasManual=0;
 	totalZonas=NUMERO_ZONAS;
-
-	//E:4 2 4 d C N 0 5 2 d C R 0 5
-	//	E:4 2 4 d @ G 0 2 2 d @ H 0 2
-		/*
-		A	17			0		0			@		16			_		47
-		B	18			9		9			I		25			`		48
-		C	19			:		10			N		30			a		49
-		D	20			;		11			S		35			c		51
-		E	21			<		12			X		40			h		56
-		F	22			=		13			[		43			k		59
-		G	23			>		14			]		44
-		H	24			?		15			^		46
-		*/
-
-
-	    /*x  nz l  h  m  i  d  nz l  h  m  i  d  nz l  h
-		  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-
-		  m  i  d  nz l  h  m  i  d  nz l  h  m  i  d*/
-
+	//activa = 0-1
+	//litros = 100
+	//hora = 20
+	//mintuos = 0
+	//intervalo = 0
+	// tiempo = 60
 }
 
 controlZona::~controlZona() {
-	// TODO Auto-generated destructor stub
 }
 
 bool controlZona::isRegando(void){
-	for (int i=1;i<NUMERO_ZONAS;i++){
+	for (byte i=1;i<NUMERO_ZONAS;i++){
 		if (control[i].regando){
 			control[LLAVE_PRINCIPAL].regando=true;
 			return true;
@@ -109,7 +99,7 @@ bool controlZona::setIncrementaLitros(byte litros){
 	if (zonasRegando>0){
 		totalLitros+=litros;
 		byte incremento = litros / zonasRegando;
-		for (int i=1;i<NUMERO_ZONAS;i++){
+		for (byte i=1;i<NUMERO_ZONAS;i++){
 			if (control[i].activa && control[i].regando &&  !control[i].reventon){
 				control[i].litrosTotales+=incremento;
 				if (control[i].litrosTotales>control[i].litrosPorRiego){
@@ -128,7 +118,7 @@ void controlZona::setRebentonZona(byte zona,bool estado){
 	//invertimos el valor de eprom
 	//byte valor= EEPROM.read(16+zona);
 	//(valor!=0x0)?valor=0x0:valor=0x1;
-	EEPROM.write(16+zona,estado);
+//	EEPROM.write(16+zona,estado);
 }
 
 void controlZona::setLitrosPorRiegoEnZona(byte zona, byte litros){
@@ -141,7 +131,15 @@ void controlZona::setLitrosPorRiegoEnZona(byte zona, byte litros){
 void controlZona::setManualZona(byte zona, bool valor,unsigned long tiempo){
 	control[zona].manual=valor;
 	control[zona].tiempo=tiempo;
+	if ((valor == true) && (control[0].manual== false)){
+			control[0].manual=true;
+	}
 	cuentaZonasManual();
+	if ((valor == false) && (zonasManual==1)) {
+		control[0].manual=false;
+		zonasManual=0;
+	}
+
 }
 
 void controlZona::setRegandoZona(byte zona, bool valor){
@@ -165,7 +163,7 @@ void controlZona::setReiniciaZona(byte zona){
 void controlZona::cuentaZonasRegando(void){
 	zonasRegando=0;
 	maxLitrosRiego =0;
-	for (int i=1;i<NUMERO_ZONAS;i++){
+	for (byte i=1;i<NUMERO_ZONAS;i++){
 		if (control[i].regando){
 			zonasRegando++;
 			maxLitrosRiego+=control[i].litrosPorRiego;
@@ -175,7 +173,7 @@ void controlZona::cuentaZonasRegando(void){
 
 void controlZona::cuentaZonasActivas(void){
 	zonasActivas=0;
-	for (int i=1;i<NUMERO_ZONAS;i++){
+	for (byte i=1;i<NUMERO_ZONAS;i++){
 		if (control[i].activa){
 			zonasActivas++;
 		}
@@ -202,9 +200,14 @@ byte controlZona::getNumeroZona(byte zona) {
 	return control[zona].numeroZona;
 }
 
+byte controlZona::getLitrosPorRiegoZona(byte zona){
+	return control[zona].litrosPorRiego;
+}
+
 void controlZona::cuentaZonasReventon(void){
 	zonasReventon=0;
-	for (int i=1;i<NUMERO_ZONAS;i++){
+	for (byte i=1;i<NUMERO_ZONAS;i++){
+
 		if (control[i].reventon){
 			zonasReventon++;
 		}
@@ -213,8 +216,8 @@ void controlZona::cuentaZonasReventon(void){
 
 void controlZona::cuentaZonasManual(void){
 	zonasManual=0;
-	for (int i=1;i<NUMERO_ZONAS;i++){
-		if (control[i].manual){
+	for (byte i=0;i<NUMERO_ZONAS;i++){
+		if (control[i].manual!=0){
 			zonasManual++;
 		}
 	}
@@ -234,6 +237,10 @@ bool controlZona::isMaxLitrosRiego(void){
 
 unsigned long controlZona::getTiempoZona(byte zona){
 	return control[zona].tiempo;
+}
+
+byte controlZona::getNumeroZonasActivas(void){
+	return zonasActivas;
 }
 
 int controlZona::getTotalLitros(void){
@@ -259,20 +266,27 @@ bool controlZona::isZonaActiva(byte zona){
 
 #ifndef RELEASE_FINAL
 void controlZona::imprimirZonas(void){
-	Serial<<endl <<F("Zonas de riego activas totales: ") << zonasActivas << endl;
-	for (int i = 0;i<NUMERO_ZONAS;i++){
-		Serial <<F("Zona: ")<<i<<F(" esActiva: ");
-		if (control[i].activa){
-			Serial <<F("SI");
+	Serial.println();
+	Serial.print(F("Zonas de riego activas totales: "));
+	Serial.println(zonasActivas);
+	for (byte i = 0;i<NUMERO_ZONAS;i++){
+		Serial.print(F("Zona: "));	Serial.print(i);
+		Serial.print(F(" esActiva: "));
+		if (control[i].activa==true){
+			Serial.println(F("SI"));
 		}else{
-			Serial <<F("NO");
-		}
-		Serial <<endl;
+			Serial.println(F("NO"));
+					}
+		Serial.println();
 		if (control[i].activa){
-			Serial <<F("\tHora: ")<<control[i].horaInicio<<F(" minutos: ")<<control[i].minutoInicio<<endl;
-			Serial <<F("\tDuracion: ")<<control[i].duracion<<F(" minutos")<<endl;
-			Serial <<F("\tlitros maximos por riego: ") << control[i].litrosPorRiego<<F(" litros actuales: ")<<control[i].litrosTotales<<endl;
-			Serial <<F("\tRegando?  ")<<control[i].regando <<F(" Reventon? ")<<control[i].reventon <<endl;
+			Serial.print(F("\tHora: "));Serial.print(control[i].horaInicio);
+			Serial.print(F(":"));Serial.println(control[i].minutoInicio);
+			Serial.print(F("\tDuracion: "));Serial.print(control[i].duracion);Serial.println(F(" minutos"));
+			Serial.print(F("\tlitros maximos por riego: "));Serial.print(control[i].litrosPorRiego);
+			Serial.print(F(" litros actuales: "));	Serial.println(control[i].litrosTotales);
+			Serial.print(F("\tRegando?  ")); Serial.print(control[i].regando);
+			Serial.print(F(" Reventon? "));	Serial.print(control[i].reventon);
+			Serial.print(F(" Manual? ")); Serial.println(control[i].manual);
 		}
 	}
 }

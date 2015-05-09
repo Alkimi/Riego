@@ -101,10 +101,7 @@ void Menu::inicia(const char GSM[])
 #ifdef RELEASE_FINAL
     delay(4000);
 #endif
-#ifndef DEBUG_PROCESS
     lcd->clear();
-#endif // DEBUG_PROCESS
-
 }
 
 size_t Menu::print(const char str[])
@@ -139,7 +136,6 @@ void Menu::botonSelect(byte x,byte y)
     lcd->write((x+1)+48);
     linea2(F("submenu: "));
     lcd->write((y+1)+48);
-    delay(5000);
 }
 
 void Menu::SetCursor(byte x,byte y)
@@ -179,17 +175,27 @@ void Menu::linea2(const __FlashStringHelper *str)
 void Menu::borraLinea1(void)
 {
     lcd->setCursor(0,0);
-    for(int i=0; i<15; i++)lcd->write(' ');
+    byte i=0;
+    while (i!=15){
+    	lcd->write(' ');
+    	i++;
+    }
 }
 
 void Menu::borraLinea2(void)
 {
     lcd->setCursor(0,1);
-    for(int i=0; i<15; i++)lcd->write(' ');
+    byte i=0;
+    while (i!=15){
+    	lcd->write(' ');
+    	i++;
+    }
 }
 
 void Menu::posicionActual(const char *x, const char *y)
 {
+	Serial.print(F("linea1: "));Serial.println(x);
+	Serial.print(F("linea2: "));Serial.println(y);
     lcd->clear();
     linea1(x);
     linea2(y);
@@ -197,6 +203,8 @@ void Menu::posicionActual(const char *x, const char *y)
 
 void Menu::posicionActual(const __FlashStringHelper *x,const __FlashStringHelper *y)
 {
+	Serial.print(F("linea1: "));	Serial.println(x);
+	Serial.print(F("linea2: "));	Serial.println(y);
     lcd->clear();
     lcd->setCursor(0,0);
     lcd->print(x);
