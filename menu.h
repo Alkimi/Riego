@@ -1,7 +1,12 @@
 #ifndef Menu_h
 #define Menu_h
-#include "Riego.h"
+#if ARDUINO >= 100
+#include "Arduino.h"
+#else
+#include "WProgram.h"
+#endif
 
+#include <LiquidCrystal.h>
 #define MENU_LIB_VERSION_MAYOR "0"
 #define MENU_LIB_VERSION_MENOR "11.2"
 
@@ -9,9 +14,9 @@
 
 class Menu {
 public:
-  Menu() ;
-  Menu(String options, unsigned int numOptions) ;
-  Menu(String options, unsigned int numOptions, unsigned int currentOption) ;
+  Menu();
+  Menu(String options, unsigned int numOptions);
+  Menu(String options, unsigned int numOptions, unsigned int currentOption);
 
   void menuDown() ;
   void menuUp() ;
@@ -43,10 +48,7 @@ private:
   String _options;
   unsigned int _numOptions ;
   void printOptions() ;
-  #ifndef DEBUG_PROCESS
-          LiquidCrystal *lcd;
-  #endif
-
+  LiquidCrystal *lcd;
 };
 
 #endif

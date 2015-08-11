@@ -14,9 +14,11 @@ extern UBuffer2 buffer2;
 /**********************************************************
   Constructor definition
 ***********************************************************/
-GSM::GSM()
+GSM::GSM(Menu * menu, controlZona * zonas)
 {
 	principalAbierta=false;
+	myMenu = menu;
+	zona = zonas;
 	limpiaBufferI();
 	myPortSerial = new SoftwareSerial(GSM_SERIAL_RX, GSM_SERIAL_TX);
 	myPortSerial->begin(4800);
@@ -216,13 +218,13 @@ char * GSM::libVer(void)
   return (GSM_LIB_VERSION);
 }
 
-void GSM::inicializaAlarmas(controlZona * zonas){
+void GSM::inicializaAlarmas(){
 	EEPROM.leeCadenaEEPROM(331,buffer.buffer); //AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5
 	enviaComando(buffer.buffer);
-	for (byte i=0;i<zonas->getNumeroZonasRiego();i++){
-		if (zonas->isZonaActiva(i)==true){
+	for (byte i=0;i<zona->getNumeroZonasRiego();i++){
+		if (zona->isZonaActiva(i)==true){
 			sprintf(buffer2.aux,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",
-					zonas->getHoraZona(i),zonas->getMinutoZona(i),i,zonas->getIntervaloZona(i));
+					zona->getHoraZona(i),zona->getMinutoZona(i),i,zona->getIntervaloZona(i));
 			enviaComando(buffer2.aux);
 		}
 	}
@@ -256,23 +258,23 @@ void GSM::reiniciaValvula(){
 	enviaComando(buffer2.aux); // "AT+SGPIO=0,5,1,0;+SGPIO=0,6,1,0"
 }
 
-void GSM::establecerZona(controlZona *zonas, byte alarma){
-	sprintf(buffer2.aux,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",zonas->getHoraZona(alarma),zonas->getMinutoZona(alarma),zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
+void GSM::establecerZona( byte alarma){
+	sprintf(buffer2.aux,"AT+CALA=\"%.2i:%.2i:00\",%d,%d",zona->getHoraZona(alarma),zona->getMinutoZona(alarma),zona->getNumeroZona(alarma),zona->getIntervaloZona(alarma));
 	enviaComando(buffer2.aux);
 }
 
-void GSM::establecerHoraFin(controlZona *zonas,byte alarma){
-	int tiempo = (zonas->getHoraZona(alarma)*60)+zonas->getMinutoZona(alarma)+zonas->getDuracionZona(alarma);
+void GSM::establecerHoraFin(byte alarma){
+	int tiempo = (zona->getHoraZona(alarma)*60)+zona->getMinutoZona(alarma)+zona->getDuracionZona(alarma);
 	byte hora = tiempo/60;
 	if (hora>24) hora =hora-24;
-	sprintf(buffer2.aux,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",zonas->getNumeroZona(alarma),hora,tiempo%60,zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
+	sprintf(buffer2.aux,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",zona->getNumeroZona(alarma),hora,tiempo%60,zona->getNumeroZona(alarma),zona->getIntervaloZona(alarma));
 	enviaComando(buffer2.aux);
 }
 
-void GSM::establecerHoraInicio(controlZona *zonas, byte alarma){
+void GSM::establecerHoraInicio(byte alarma){
 	sprintf(buffer2.aux,"AT+CALD=%d;+CALA=\"%.2i:%.2i:00\",%d,%d",
-			zonas->getNumeroZona(alarma),zonas->getHoraZona(alarma),
-			zonas->getMinutoZona(alarma),zonas->getNumeroZona(alarma),zonas->getIntervaloZona(alarma));
+			zona->getNumeroZona(alarma),zona->getHoraZona(alarma),
+			zona->getMinutoZona(alarma),zona->getNumeroZona(alarma),zona->getIntervaloZona(alarma));
 
 	enviaComando(buffer2.aux);
 }
@@ -399,6 +401,159 @@ void GSM::limpiaSMS(void){
 	for (byte i=0;i<MAX_BUFFER_SMS;i++){
 		buffer.SMS[i]=0x0;
 	}
+}
+
+//correcto
+void GSM::setSMS(char *linea2) {
+	EEPROM.escrituraEeprom16(0, linea2);
+}
+
+//correcto
+void GSM::getSMS(char* linea1,char*linea2,boolean pantallaEncendida) {
+	myMenu->noBlink();
+	EEPROM.lecturaEeprom16(0, linea2);
+	if (pantallaEncendida){
+		EEPROM.leeCadenaEEPROM(653,linea1);//Destino SMS:
+		linea2[0]='+';
+		linea2[1]='3';
+		linea2[2]='4';
+		myMenu->posicionActual(linea1, linea2);
+	}
+}
+
+//correcto
+void GSM::getFechaHora(char *linea1,char *linea2) {
+	char l1[17];
+	char l2[17];
+	EEPROM.leeCadenaEEPROM(492,l1); //fecha:
+	EEPROM.leeCadenaEEPROM(906,l2); // hora:
+	EEPROM.leeCadenaEEPROM(417,buffer2.aux); // AT+CCLK?
+	enviaComando(buffer2.aux);
+	l1[7] = buffer2.aux[14];
+	l1[8] = buffer2.aux[15];
+	l1[9] = buffer2.aux[13];
+	l1[10] = buffer2.aux[11];
+	l1[11] = buffer2.aux[12];
+	l1[12] = buffer2.aux[10];
+	l1[13] = buffer2.aux[8];
+	l1[14] = buffer2.aux[9];
+	l1[15] =0x0;
+	l1[16] =0x0;
+	for (byte i=17,j=7;i<25;i++,j++){
+		l2[j]=buffer2.aux[i];
+	}
+	l2[15] =0x0;
+	l2[16] =0x0;
+	for (byte i=0;i<17;i++){
+		linea1[i]=l1[i];
+		linea2[i]=l2[i];
+	}
+	myMenu->posicionActual(linea1, linea2);
+	/*
+	 +CCLK: "15/01/11,16:56:39+02"
+	 0123456789012345678901234567890
+	 0         1         2         3*/
+}
+
+//correcto
+bool GSM::setFechaHora(byte opcion,char *linea1,char * linea2) {
+	bool salida = true;
+	char * cadena;
+	sprintf(buffer2.aux, "AT+CCLK=\"%c%c/%c%c/%c%c,%c%c:%c%c:%c%c+02\"", linea1[13],
+			linea1[14], linea1[10], linea1[11], linea1[7], linea1[8], linea2[7],
+			linea2[8], linea2[10], linea2[11], linea2[13], linea2[14]);
+	cadena = enviaComando(buffer2.aux);
+	if (cadena == NULL) {
+		myMenu->noBlink();
+		if (opcion == 2) {
+			EEPROM.leeCadenaEEPROM(500,linea2); //Fecha erronea
+			myMenu->linea2(linea2);
+		} else {
+			EEPROM.leeCadenaEEPROM(514,linea2); //Hora erronea
+			myMenu->linea2(linea2);
+		}
+		delay(1000);
+		salida = false;
+	}
+	return salida;
+
+}
+
+void GSM::tratarRespuestaGprs() {
+	limpiaBufferI();
+	long tiempoL = millis();
+	int lectura=0;
+	int contador=0;
+
+	do{
+			if (available()>0){
+				lectura=available();
+				for(int i=0;i<lectura;i++){
+					if (contador < MAX_BUFFER){
+						buffer.buffer[contador]=read();
+						contador++;
+					}
+				}
+			}
+	}while(millis()-tiempoL<1000);
+
+	//alama
+#ifndef RELEASE
+	Serial.println(F("dentro de tratarRespuesta GPRS"));
+#endif
+	if (buffer.buffer[3]=='C' && buffer.buffer[4]=='A' && buffer.buffer[5]=='L' && buffer.buffer[6]=='V'){
+#ifndef RELEASE
+		Serial.println(F("dentro de CALV"));
+#endif
+
+		byte alarma = buffer.buffer[9] - 48;
+		if (!zona->isReventonZona(alarma)){
+#ifndef RELEASE
+			Serial.print(F("No hay problema en zona: "));Serial.println(alarma);
+#endif
+			if (!zona->isRegandoZona(alarma)){//salta la alarma se establece la duracion
+#ifndef RELEASE
+				Serial.println(F("inicio riego"));
+#endif
+				zona->setRegandoZona(alarma,true);
+				iniciarRiegoZona(alarma);
+				establecerHoraFin(alarma);
+			} else    // salta la alarma porque ha terminado el tiempo de riego
+			{
+#ifndef RELEASE
+				Serial.println(F("fin riego"));
+#endif
+				zona->setRegandoZona(alarma,false);
+				pararRiegoZona(alarma);
+			//	zona(alarma);
+			}
+		}
+#ifndef RELEASE
+		else{
+			Serial.print(F("hay problema en zona: "));Serial.print(alarma);	Serial.println(F(" no hace nada"));
+		}
+		Serial.println(F("fuera de CALV"));
+#endif
+	}
+#ifndef RELEASE
+	Serial.println(F("fuera de tratarRespuesta GPRS"));
+#endif
+
+}
+
+void GSM::comandoGPRS() {
+	if (available()) // if date is comming from softwareserial port ==> data is comming from gprs shield
+	{
+		tratarRespuestaGprs();
+	}
+#ifndef RELEASE_FINAL
+	if (Serial.available()) // if data is available on hardwareserial port ==> data is comming from PC or notebook
+	{
+		if (tratarRespuestaSerial()==true) {
+			enviaComando(buffer.buffer);       // write it to the GPRS shield
+		}
+	}
+#endif
 }
 
 GSM::~GSM(){

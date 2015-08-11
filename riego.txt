@@ -60,6 +60,8 @@ si tiempo
 				|    |	guardar en memoria rearmar principal	
 	sino
 		nada
-		
+		-------------------
+		zona activa x
+		hora: xx:yy			->  litros: zzz    -->
 	
 	

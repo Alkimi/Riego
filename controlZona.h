@@ -8,6 +8,8 @@
 #ifndef CONTROLZONA_H_
 #define CONTROLZONA_H_
 #include "Riego.h"
+#include "Menu.h"
+#include "Botonera.h"
 
 
 #define NUMERO_ZONAS 5  // 0 la principal 4 de riego
@@ -32,7 +34,7 @@ typedef struct
 
 class controlZona {
 public:
-	controlZona();
+	controlZona(Menu * menu, Botonera * botones);
 	virtual ~controlZona();
 
 	bool isRegando(void);
@@ -72,6 +74,9 @@ public:
 	byte getNumeroZonasActivas();
 	unsigned long getTiempoZona(byte zona);
 
+	void mostrarConfigurarInformacionZonas(boolean tipo);
+	void actualizaDatosZona(byte zona);
+
 #ifndef RELEASE_FINAL
 	void imprimirZonas(void);
 #endif
@@ -89,6 +94,9 @@ private:
 	byte zonasManual;
 	int maxLitrosRiego;
 	int totalLitros;
+	Menu * myMenu;
+	Botonera * botonera;
+
 };
 
 #endif /* CONTROLZONA_H_ */

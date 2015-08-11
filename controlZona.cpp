@@ -10,10 +10,12 @@
 
 extern UBuffer2 buffer2;
 
-controlZona::controlZona(){
+controlZona::controlZona(Menu * menu,Botonera * botones){
 	char *aux = buffer2.aux;
 	char *aux2 = &buffer2.aux[16];
 	byte posicion=0;
+	myMenu=menu;
+	botonera = botones;
 	EEPROM.lecturaEeprom16(2,aux);
 	EEPROM.lecturaEeprom16(3,aux2);
 
@@ -262,6 +264,89 @@ bool controlZona::isManual(void){
 bool controlZona::isZonaActiva(byte zona){
 	return control[zona].activa;
 }
+
+
+void controlZona::mostrarConfigurarInformacionZonas(boolean tipo){
+	boolean salida=false;
+	byte zona =1;
+	int key;
+	unsigned long tiempoEspera=millis();
+	byte maxZona=getNumeroZonasRiego()-1;
+	char *linea1 = buffer2.aux;
+	char *linea2 = &buffer2.aux[17];
+	EEPROM.leeCadenaEEPROM(527,linea1); //Zonas activas
+	EEPROM.leeCadenaEEPROM(559,linea2); //"               "
+	linea1[14]=getNumeroZonasActivas()+48;
+	myMenu->posicionActual(linea1,linea2);
+	do {
+		key=botonera->lecturaPulsador();
+		if (key != -1) {
+			tiempoEspera=millis();
+			if (key == 0) {  // Se ha pulsado la tecla derecha
+				//zona+1
+				zona++;
+				if (zona>maxZona){
+					zona=1;
+				}
+			}
+			if (key == 3) {  // Se ha pulsado la tecla izquierda
+				//zona -1
+				zona--;
+				if (zona<1){
+					zona=maxZona;
+				}
+			}
+			if (key == 4) {  // Se ha pulsado la tecla de seleccion
+				//salida
+				salida=true;
+			}
+			if (!salida){
+				//mostramos la informacion
+				EEPROM.leeCadenaEEPROM(543,linea1); //Zona x act. NO
+				linea1[5]=getNumeroZona(zona)+48;
+				if (isZonaActiva(zona)==true){
+						linea1[12]='S';
+						linea1[13]='I';
+						sprintf(linea2,"%.2i:%.2i %.3d %.3d",getHoraZona(zona),getMinutoZona(zona),
+								getLitrosPorRiegoZona(zona),getDuracionZona(zona));
+				}else{
+					EEPROM.leeCadenaEEPROM(559,linea2); //"               "
+				}
+				if (tipo==false){
+					botonera->cambioValor(linea1,linea2,12);
+					if (isZonaActiva(zona)==true){
+							linea1[12]='S';
+							linea1[13]='I';
+							actualizaDatosZona(zona);
+					}else{
+						EEPROM.leeCadenaEEPROM(559,linea2); //"               "
+					}
+				}
+				myMenu->posicionActual(linea1,linea2);
+				//Zona x activa: SI/NO
+				//hora: xx:yy litros MAX: xxx Duraccion: xxx  Regando? SI/NO Rebenton? SI/NO Manual? SI/NO
+			}
+		}else{
+			if (millis()-tiempoEspera> CINCOSEGUNDOS){
+				salida=true;
+			}
+		}
+	}while (!salida);
+}
+
+void controlZona::actualizaDatosZona(byte zona){
+	char *linea1 = buffer2.aux;
+	char *linea2 = &buffer2.aux[17];
+	linea1="Zona activa ";
+	linea1[13]=zona+48;
+	linea2[14]=0x0;
+	linea2="Hora: 00:00";
+	botonera->cambioNumeroLimite(linea1,linea2,1);
+	botonera->cambioNumeroLimite(linea1,linea2,2);
+
+}
+
+
 
 
 #ifndef RELEASE_FINAL

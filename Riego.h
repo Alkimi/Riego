@@ -11,13 +11,13 @@
 #include "WProgram.h"
 #endif
 #include "miEEPROM.h"
-#include "controlZona.h"
+//#include "controlZona.h"
 
 
 
 //#include <Time.h>
 //#include "Flash.h"
-#include <LiquidCrystal.h>
+
 #include <SoftwareSerial.h>
 
 //pins usados
@@ -98,17 +98,13 @@ void setup();
 int get_key(unsigned int input); 	//*
 void tratarOpcion(byte x,byte y);	//*
 void controlTiempo(void); 			//*
-void getSMS(char *linea1,char *linea2);					//*
-void setSMS(char *linea2);					//*
-void getFechaHora(char*linea1,char*linea2);			//*
-bool setFechaHora(byte opcion,char*linea1,char*linea2);		//*
-void cambioNumero(byte tipo,char*linea1,char* linea2);		//*
-void comandoGPRS(void);				//*
-void tratarRespuestaGprs(void); 	//*
+
+
+
 void getBateria(void);
-void estadoProblemaEnZona(byte zona);
+
 int lecturaPulsador(void);
-void riegoManual(byte zona);
+
 
 //metodos de pruebas a borrar
 #ifndef RELEASE_FINAL
@@ -118,7 +114,12 @@ void leerEEPROM(byte pos,boolean tipo);			//*
 
 void configuracionSeguridad();
 void mostrarConfiguracionSeguridad();
-void cambioNumeroSN(char *linea1,char *linea2);
+
+void cambioNumero(byte tipo,char*linea1,char* linea2);		//*
+void cambioNumeroSN(char *linea1,char *linea2,byte tipo);
+void cambioNumeroLimite(char *linea1,char *linea2,byte tipo);
+void riegoManual(byte zona);
+void estadoProblemaEnZona(byte zona);
 
 
 #endif

@@ -2,9 +2,12 @@
 
 #ifndef __GSM
 #define __GSM
-
 #include "Riego.h"
-//#include "controlZona.h"
+
+
+#include "Menu.h"
+#include "controlZona.h"
+
 //#include "miEEPROM.h"
 
 #define GSM_LIB_VERSION_MAYOR "0"
@@ -44,7 +47,7 @@ class GSM
 {
 public:
     // constructor
-    GSM();
+    GSM(Menu *menu,controlZona * zonas);
     ~GSM();
     void SIM900power(void);
     int available(void);
@@ -57,14 +60,18 @@ public:
     int read(void);
     char * enviaComando(const char str[]);
     char * enviaComando(const String &s);
-    void establecerZona(controlZona *zonas,byte alarma);
-    void establecerHoraFin(controlZona *zonas,byte alarma);
-    void establecerHoraInicio(controlZona *zonas,byte alarma);
+    void establecerZona(byte alarma);
+    void establecerHoraFin(byte alarma);
+    void establecerHoraInicio(byte alarma);
     void iniciarRiegoZona(byte numeroAlarma);
     void pararRiegoZona(byte numeroAlarma);
-    void inicializaAlarmas(controlZona * zonas);
+    void inicializaAlarmas();
     void valvulaPrincipal(bool estado);
     bool isActivo(void);
+    void getSMS(char *linea1,char *linea2,boolean pantallaEncendida);					//*
+    void setSMS(char *linea2);					//*
+    void getFechaHora(char*linea1,char*linea2);			//*
+    bool setFechaHora(byte opcion,char*linea1,char*linea2);		//*
    // bool getProblemaEnZona(byte zona);
    // void setProblemaEnZona(byte zona,bool estado);
     void enviaSMSErrorPrincipal(void);
@@ -76,14 +83,16 @@ public:
     void setTiempoValvula(unsigned long tiempo);
     unsigned long getTiempoValvula();
     void reiniciaValvula(void);
+    void comandoGPRS();				//*
+    void tratarRespuestaGprs(); 	//*
 
     size_t readBytesUntil(char terminator, char *buffer, size_t length);
     void limpiaBufferI(void);
 
 private:
-    #ifndef DEBUG_PROCESS
+    //#ifndef DEBUG_PROCESS
         SoftwareSerial* myPortSerial;
-    #endif
+    //#endif
     char bufferI[MAX_BUFFER];
     unsigned long tiempoValvula;
     boolean cadena_errores[4];
@@ -91,6 +100,9 @@ private:
 
     void limpiaSMS(void);
     char *procesaEnviaComando(void);
+    Menu * myMenu;
+    controlZona  * zona;
+
 };
 #endif
 
