@@ -265,74 +265,59 @@ bool controlZona::isZonaActiva(byte zona){
 	return control[zona].activa;
 }
 
-
 void controlZona::mostrarConfigurarInformacionZonas(boolean tipo){
-	boolean salida=false;
-	byte zona =1;
-	int key;
+	byte zona;
+	bool activa=false;
+	Serial.println("dentro de mostrarConfigurarInformacionZonas "); //TODO  a quitar
 	unsigned long tiempoEspera=millis();
-	byte maxZona=getNumeroZonasRiego()-1;
 	char *linea1 = buffer2.aux;
 	char *linea2 = &buffer2.aux[17];
-	EEPROM.leeCadenaEEPROM(527,linea1); //Zonas activas
-	EEPROM.leeCadenaEEPROM(559,linea2); //"               "
-	linea1[14]=getNumeroZonasActivas()+48;
+	EEPROM.leeCadenaEEPROM(283,linea1); //selecciona zonas
+	if (tipo==true){
+		EEPROM.leeCadenaEEPROM(299,linea2); //a mostrar:   x
+	}else{
+		EEPROM.leeCadenaEEPROM(315,linea2); //a configurar: x
+	}
 	myMenu->posicionActual(linea1,linea2);
-	do {
-		key=botonera->lecturaPulsador();
-		if (key != -1) {
-			tiempoEspera=millis();
-			if (key == 0) {  // Se ha pulsado la tecla derecha
-				//zona+1
-				zona++;
-				if (zona>maxZona){
-					zona=1;
-				}
-			}
-			if (key == 3) {  // Se ha pulsado la tecla izquierda
-				//zona -1
-				zona--;
-				if (zona<1){
-					zona=maxZona;
-				}
-			}
-			if (key == 4) {  // Se ha pulsado la tecla de seleccion
-				//salida
-				salida=true;
-			}
-			if (!salida){
-				//mostramos la informacion
-				EEPROM.leeCadenaEEPROM(543,linea1); //Zona x act. NO
-				linea1[5]=getNumeroZona(zona)+48;
-				if (isZonaActiva(zona)==true){
-						linea1[12]='S';
-						linea1[13]='I';
-						sprintf(linea2,"%.2i:%.2i %.3d %.3d",getHoraZona(zona),getMinutoZona(zona),
-								getLitrosPorRiegoZona(zona),getDuracionZona(zona));
+	if (botonera->cambioValor(linea1,linea2,34)==true){
+		zona=linea2[14];
+		EEPROM.leeCadenaEEPROM(543,linea1); //Zona x act. NO
+		linea1[5]=getNumeroZona(zona)+48;
+		if (isZonaActiva(zona)==true){
+				linea1[12]='S';
+				linea1[13]='I';
+				activa=true;
+		}
+		EEPROM.leeCadenaEEPROM(559,linea2); //"               "
+		myMenu->posicionActual(linea1,linea2);
+		if (tipo==false){//establecemos la informacion de configuracion
+			if (botonera->cambioValor(linea1,linea2,12)==true){
+				if (linea1[12]=='S'){
+					activa=true;
+					//establece zona activa
 				}else{
-					EEPROM.leeCadenaEEPROM(559,linea2); //"               "
+					activa=false;
+					//establece zona no activa
 				}
-				if (tipo==false){
-					botonera->cambioValor(linea1,linea2,12);
-					if (isZonaActiva(zona)==true){
-							linea1[12]='S';
-							linea1[13]='I';
-							actualizaDatosZona(zona);
-					}else{
-						EEPROM.leeCadenaEEPROM(559,linea2); //"               "
-					}
+				if (activa==true){
+					//establecemos hora
+
+					//establece duracion
+
+					//establecemos maximo litros riego
+
+					//establece periocidad
 				}
-				myMenu->posicionActual(linea1,linea2);
-				//Zona x activa: SI/NO
-				//hora: xx:yy litros MAX: xxx Duraccion: xxx  Regando? SI/NO Rebenton? SI/NO Manual? SI/NO
 			}
 		}else{
-			if (millis()-tiempoEspera> CINCOSEGUNDOS){
-				salida=true;
-			}
+			//mostramos la informacion de configuracion
 		}
-	}while (!salida);
+	}
+	myMenu->posicionActual(linea1,linea2);
+	delay(4000);
+	Serial.println("fuera de mostrarConfigurarInformacionZonas "); //TODO  a quitar
 }
+
 
 void controlZona::actualizaDatosZona(byte zona){
 	char *linea1 = buffer2.aux;
@@ -341,12 +326,10 @@ void controlZona::actualizaDatosZona(byte zona){
 	linea1[13]=zona+48;
 	linea2[14]=0x0;
 	linea2="Hora: 00:00";
-	botonera->cambioNumeroLimite(linea1,linea2,1);
-	botonera->cambioNumeroLimite(linea1,linea2,2);
+	botonera->cambioValor(linea1,linea2,31);
+	botonera->cambioValor(linea1,linea2,32);
 
 }
-
-
 
 
 #ifndef RELEASE_FINAL

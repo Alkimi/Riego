@@ -12,32 +12,65 @@ Botonera::Botonera(Menu * menu) {
 	myMenu = menu;
 }
 
-// Convertimos el valor leido en analogico en un numero de boton pulsado
-int Botonera::get_key(unsigned int input) {
-	if (input < ADC_KEY_ARRIBA){
-		return KEY_ARRIBA;
-	}else{
-		if (input < ADC_KEY_ABAJO){
-			return KEY_ABAJO;
-		}else{
-			if (input < ADC_KEY_DERECHA){
-			   return KEY_DERECHA;
-			}else{
-				if (input < ADC_KEY_IZQUIERDA){
-					return KEY_IZQUIERDA;
-				}else{
-					if (input < ADC_KEY_SELECT){
-						return KEY_SELECT;
-					}else{
-						return NO_KEY;
-					}
+
+bool Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
+	Serial.println("dentro de Botonera::cambioValor "); //TODO  a quitar
+	bool salida = false;
+	bool tiempo= true;
+	unsigned long tiempoEspera=millis();
+	int keyNumero;
+	int contador=getContadorInicio(linea1,linea2,opcion);
+	byte posicion=desplazamiento(opcion,0,true);
+	byte limite = getLimite(opcion);
+#ifndef RELEASE
+	Serial.print(F("limite: "));Serial.print(limite);Serial.print(F(" posicion: "));Serial.print(posicion);Serial.print(F(" opcion: "));Serial.println(opcion);
+#endif
+	do {
+		keyNumero=lecturaPulsador();
+		if (keyNumero != NO_KEY) {
+#ifndef RELEASE
+	Serial.print(F("tecla pulsada: "));Serial.println(keyNumero);
+#endif
+			tiempoEspera=millis();
+			///myMenu->SetCursor(myX, 1);
+			if (keyNumero == KEY_DERECHA) {  // Se ha pulsado la tecla derecha
+				posicion=desplazamiento(opcion,posicion,true);
+			}
+			if (keyNumero == KEY_ARRIBA) {
+				contador++;
+				if (contador> limite) {
+					contador=0;
 				}
+				cambioValorOpcion(linea1,linea2,opcion,contador,posicion);
+			}
+			if (keyNumero == KEY_ABAJO){
+				contador--;
+				if (contador<0) {
+					contador=limite;
+				}
+				cambioValorOpcion(linea1,linea2,opcion,contador,posicion);
+			}
+			//sprintf(cadena,"%.2i",contador);
+			if (keyNumero == KEY_IZQUIERDA) {  // Se ha pulsado la tecla izquierda
+				posicion=desplazamiento(opcion,posicion,false);
+			}
+
+			if (keyNumero == KEY_SELECT) { // Se ha pulsado la tecla de seleccion
+				salida = true;
+			}
+		}else{
+			if (millis()-tiempoEspera> CINCOSEGUNDOS){
+				salida=true;
+				tiempo=false;
 			}
 		}
-	}
+	} while (!salida);
+	Serial.println("fuera de Botonera::cambioValor "); //TODO  a quitar
+	return tiempo;
 }
 
 int Botonera::lecturaPulsador(void){
+	int keyNumero;
 	keyNumero = get_key(analogRead(BOTONERA));    // Obtenemos el boton pulsado
 	if (keyNumero != NO_KEY) {  // if keypress is detected
 		delay(100);  // Espera para evitar los rebotes de las pulsaciones
@@ -47,199 +80,6 @@ int Botonera::lecturaPulsador(void){
 		}
 	}
 	return keyNumero;
-}
-
-/*
-//correcto
-void Botonera::cambioNumero(char *linea1,char* linea2,byte opcion) {
-	bool salida = false;
-	boolean fechaHora=false;
-	unsigned long tiempoEspera=millis();
-	char caracter;
-	byte xmax, xmin;
-	byte xNumero;
-	byte columna;
-	int keyNumero;
-
-	char * linea;
-
-	xmax = 14;
-	xmin = 7;
-	linea = linea2;
-	columna = 0;
-
-	switch (opcion) {
-	case 0:
-		xmin = 7;
-		xmax = 10;
-		columna = 1;
-		break;
-	case 1:
-		xmin = 3;
-		xmax = 11;
-		columna = 1;
-		break;
-	case 2:
-		fechaHora=true;
-		myMenu->borraLinea2();
-		linea = linea1;
-		break;
-	case 3:
-		fechaHora=true;
-		myMenu->borraLinea1();
-		myMenu->borraLinea2();
-		myMenu->linea1(linea);
-		break;
-	}
-
-	myMenu->SetCursor(xmin, columna);
-	caracter = linea[xmin];
-	xNumero = xmin;
-	do {
-		keyNumero=lecturaPulsador();
-		if (keyNumero >= 0 && keyNumero < NUM_KEYS) {
-			tiempoEspera=millis();
-			myMenu->SetCursor(xNumero, columna);
-			if (keyNumero == 0) {  // Se ha pulsado la tecla derecha
-				xNumero++;
-				if ((fechaHora==true) && ((xNumero == 9) || (xNumero == 12)))
-					xNumero++;
-				if (xNumero > xmax)
-					xNumero = xmin;
-				caracter = linea[xNumero];
-			}
-			if (keyNumero == 1) {   // Se ha pulsado la tecla arriba
-					caracter--;
-					if (caracter < '0')
-						caracter = '9';
-					linea[xNumero] = caracter;
-					myMenu->write(caracter);
-
-			}
-			if (keyNumero == 2) {  // Se ha pulsado la tecla abajo
-					caracter++;
-					if (caracter > '9')
-						caracter = '0';
-					linea[xNumero] = caracter;
-					myMenu->write(caracter);
-			}
-
-			if (keyNumero == 3) {  // Se ha pulsado la tecla izquierda
-				xNumero--;
-				if ((fechaHora==true) && ((xNumero == 9) || (xNumero == 12)))
-					xNumero--;
-				if (xNumero < xmin)
-					xNumero = xmax;
-				caracter = linea[xNumero];
-			}
-			if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
-				salida = true;
-			}
-			myMenu->SetCursor(xNumero, columna);
-		}else{
-			if (millis()-tiempoEspera> CINCOSEGUNDOS){
-				salida=true;
-			}
-		}
-	} while (!salida);
-}*/
-
-/*
-
-void Botonera::cambioNumeroSN(char *linea1,char *linea2,byte opcion){
-	bool salida = false;
-	unsigned long tiempoEspera=millis();
-		char caracter;
-		int keyNumero;
-		byte myX;
-		myMenu->borraLinea2();
-		if (opcion==1){
-			myX=11;
-		}
-		if (opcion==2){
-			myX=12;
-		}
-		myMenu->SetCursor(myX, 0);
-		caracter = linea1[myX];
-		do {
-			keyNumero=lecturaPulsador();
-			if (keyNumero >= 0 && keyNumero < NUM_KEYS) {
-				tiempoEspera=millis();
-				myMenu->SetCursor(myX, 0);
-				if ((keyNumero == 1) || (keyNumero == 2)) {   // Se ha pulsado la tecla arriba o abajo
-					if (caracter=='S'){
-						myMenu->print("NO");
-						linea1[myX] = 'N';
-						linea1[myX+1] = 'O';
-						caracter='N';
-					}else{
-						myMenu->print("SI");
-						linea1[myX] = 'S';
-						linea1[myX+1] = 'I';
-						caracter='S';
-					}
-				}
-				if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
-					salida = true;
-				}
-			}else{
-				if (millis()-tiempoEspera> CINCOSEGUNDOS){
-					salida=true;
-				}
-			}
-		} while (!salida);
-}*/
-
-
-void Botonera::cambioNumeroLimite(char *linea1,char *linea2,byte opcion){
-	bool salida = false;
-	unsigned long tiempoEspera=millis();
-	byte contador = 0;
-	byte limite =0;
-	char * cadena;
-		int keyNumero;
-		byte myX;
-		if (opcion==1){
-			limite=23;
-			myX=6;
-		}
-		if (opcion==2){
-			limite=59;
-			myX=9;
-		}
-		if (opcion==3){
-			limite=255;
-		}
-		myMenu->SetCursor(myX, 0);
-		cadena = &linea1[myX-1];
-		do {
-			keyNumero=lecturaPulsador();
-			if (keyNumero >= 0 && keyNumero < NUM_KEYS) {
-				tiempoEspera=millis();
-				myMenu->SetCursor(myX, 1);
-				if (keyNumero == 1) {
-					contador++;
-					if (contador> limite) {
-						contador=0;
-					}
-				}
-				if (keyNumero == 2){
-					contador--;
-					if (contador<0) {
-						contador=limite;
-					}
-				}
-				sprintf(cadena,"%.2i",contador);
-
-				if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
-					salida = true;
-				}
-			}else{
-				if (millis()-tiempoEspera> CINCOSEGUNDOS){
-					salida=true;
-				}
-			}
-		} while (!salida);
 }
 
 void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actual,byte posicion){
@@ -256,12 +96,12 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 		myMenu->SetCursor(posicion, 0);
 		if (actual==0){
 			myMenu->print("NO");
-			linea1[posicion] = 'N';
-			linea1[posicion+1] = 'O';
+			linea1[opcion] = 'N';
+			linea1[opcion+1] = 'O';
 		}else{
 			myMenu->print("SI");
-			linea1[posicion] = 'S';
-			linea1[posicion+1] = 'I';
+			linea1[opcion] = 'S';
+			linea1[opcion+1] = 'I';
 		}
 	}
 
@@ -270,24 +110,19 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 
 		char caracter;
 		byte columna =0;
-		char * linea;
+		char * linea = linea2;
 
-		linea = linea2;
-
-		switch (opcion) {
-			case 20:
-			case 21:
-				columna = 1;
-				break;
-			case 22:
+		if (opcion==20 || opcion ==21){
+			columna = 1;
+		}else{
+			if (opcion==22){
 				myMenu->borraLinea2();
 				linea = linea1;
-				break;
-			case 23:
+			}else{ //23
 				myMenu->borraLinea1();
 				myMenu->borraLinea2();
 				myMenu->linea1(linea);
-				break;
+			}
 		}
 		myMenu->SetCursor(posicion, columna);
 		caracter = actual+48;
@@ -295,44 +130,57 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 		myMenu->write(caracter);
 	}
 
-	//
-}
+	// tipo hora 23
+	if (opcion==31){
+		myMenu->SetCursor(posicion,1);
+		char *cadena = &linea1[posicion-1];
 
-
-byte Botonera::getLimite(byte opcion){
-	//tipo si-no
-	if (opcion<20){
-		return 1;
+		sprintf(cadena,"%.2i",actual);
 	}
 
-	//tipo numerico 0-9
-	if (opcion>20 && opcion<30){
-		return 9;
-	}
-	//
-	if (opcion>30) {
-		return 10;
+	if (opcion==34){
+		char caracter;
+		myMenu->SetCursor(posicion, 1);
+		caracter = actual+49; // para que empieze en 1 en lugar de 0
+		linea2[posicion] = caracter;
+		myMenu->write(caracter);
 	}
 }
 
 byte Botonera::desplazamiento(byte opcion, byte posicion, boolean derecha){
 	byte posicionDestino=posicion;
 
-	if (opcion>20 && opcion <30){
+	if (opcion>20 && opcion <40){
 		boolean fechaHora=true;
 
 		byte xmax = 14;
 		byte xmin = 7;
-		switch (opcion) {
-			case 20:
-				xmax = 10;
-				fechaHora=false;
-				break;
-			case 21:
+
+		if (opcion==20){
+			xmax = 10;
+			fechaHora=false;
+		}else{
+			if (opcion==21){
 				xmin = 3;
 				xmax = 11;
 				fechaHora=false;
-				break;
+			}else{
+				if (opcion==31){
+					return 6;
+				}else{
+					if (opcion==32){
+						return 9;
+					}else{
+						if (opcion==33){
+							return 10;
+						}else{
+							if (opcion==34){
+								return 14;
+							}
+						}
+					}
+				}
+			}
 		}
 		if (derecha==true){
 			posicionDestino++;
@@ -351,50 +199,118 @@ byte Botonera::desplazamiento(byte opcion, byte posicion, boolean derecha){
 	return posicionDestino;
 }
 
-void Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
-	bool salida = false;
-	unsigned long tiempoEspera=millis();
-	byte contador=0;
-	byte posicion=0;
-	byte limite = getLimite(opcion);
-	do {
-		keyNumero=lecturaPulsador();
-		if (keyNumero != NO_KEY) {
-			tiempoEspera=millis();
-			///myMenu->SetCursor(myX, 1);
-			if (keyNumero == KEY_DERECHA) {  // Se ha pulsado la tecla derecha
-				posicion=desplazamiento(opcion,posicion,true);
-			}
-			if (keyNumero == KEY_ARRIBA) {
-				contador++;
-				if (contador> limite) {
-					contador=0;
-				}
-				cambioValorOpcion(linea1,linea2,opcion,limite,posicion);
-			}
-			if (keyNumero == KEY_ABAJO){
-				contador--;
-				if (contador<0) {
-					contador=limite;
-				}
-				cambioValorOpcion(linea1,linea2,opcion,limite,posicion);
-			}
-			//sprintf(cadena,"%.2i",contador);
-			if (keyNumero == KEY_IZQUIERDA) {  // Se ha pulsado la tecla izquierda
-				posicion=desplazamiento(opcion,posicion,false);
-			}
-
-			if (keyNumero == 4) { // Se ha pulsado la tecla de seleccion
-				salida = true;
-			}
+byte Botonera::getContadorInicio(char *linea1,char *linea2,byte opcion){
+	//tipo si-no
+	if (opcion<20){
+		if (linea1[opcion]=='N'){
+			return 0;
 		}else{
-			if (millis()-tiempoEspera> CINCOSEGUNDOS){
-				salida=true;
-			}
+			return 1;
 		}
-	} while (!salida);
+	}
+
+	//tipo numerico 0-9
+	if (opcion==20){
+		return linea2[7]-48;
+	}
+
+	if (opcion==21){
+		return linea2[3]-48;
+	}
+
+	if (opcion==22){
+		return linea1[7]-48;
+	}
+
+	if (opcion==31){
+		return linea2[10];
+	}
+
+	if (opcion==32){
+		return linea2[10];
+	}
+
+	if (opcion==33){
+		return linea2[10];
+	}
+
+	if (opcion==34){
+		return linea2[14]-49;
+	}
+
+
 }
 
+
+// Convertimos el valor leido en analogico en un numero de boton pulsado
+int Botonera::get_key(unsigned int input) {
+	if (input < ADC_KEY_DERECHA ){
+#ifndef RELEASE
+	Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_DERECHA);
+#endif
+		return KEY_DERECHA ;
+	}else{
+		if (input < ADC_KEY_ARRIBA ){
+#ifndef RELEASE
+			Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_ARRIBA);
+#endif
+			return KEY_ARRIBA ;
+		}else{
+			if (input < ADC_KEY_ABAJO ){
+#ifndef RELEASE
+				Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_ABAJO);
+#endif
+			   return KEY_ABAJO ;
+			}else{
+				if (input < ADC_KEY_IZQUIERDA){
+#ifndef RELEASE
+					Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_IZQUIERDA);
+#endif
+					return KEY_IZQUIERDA;
+				}else{
+					if (input < ADC_KEY_SELECT){
+#ifndef RELEASE
+						Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_SELECT);
+#endif
+						return KEY_SELECT;
+					}else{
+						return NO_KEY;
+					}
+				}
+			}
+		}
+	}
+}
+
+
+byte Botonera::getLimite(byte opcion){
+	//tipo si-no
+	if (opcion<20){
+		return 1;
+	}
+
+	//tipo numerico 0-9
+	if (opcion>20 && opcion<30){
+		return 9;
+	}
+	//
+	if (opcion==31) {
+		return 23;
+	}
+
+	if (opcion==32){
+		return 59;
+	}
+
+	if (opcion==33){
+		return 255;
+	}
+
+	if (opcion==34){
+		return 4;
+	}
+	return 0;
+}
 
 Botonera::~Botonera() {
 	// TODO Auto-generated destructor stub

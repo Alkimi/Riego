@@ -8,9 +8,9 @@
  5                                                                 192
  6                                                                 224
  7                                                                 256
- 8                                                                 288
- 9                                                                 320
-10 # # # # # # # # # # # A T + C A L D = 1 ; + C A L D = 2 ; + C A 352 
+ 8 # # # # # # # # # # # # # # # # # # # # # # # # # # # s e l e c 288
+ 9 c i o n a   z o n a # a   m o s t r a r :         1 # a   c o n 320
+10 f i g u r a r :   1 # A T + C A L D = 1 ; + C A L D = 2 ; + C A 352 
  1 L D = 3 ; + C A L D = 4 ; + C A L D = 5 # A T + S G P I O = 0 , 384
  2 5 , 1 , X ; + S G P I O = 0 , 6 , 1 , X # A T # A T + C B T E ? 416
  3 # A T + C C L K ? # E s t a d o   p r i n c i p a l : # E s t a 448
@@ -44,8 +44,8 @@ p22   = cuarto valor de contraseña
 p32-62= valores de zona de reigo, 5 zonas: activa, litros, hora, mintuos, intervalo, duracion
 
 bloque 0 : +34654019759
-
-bloque 20: ###########AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5#AT+SGPIO=0,
+bloque 16: ###########################selecciona zona#a mostrar:    1#a con 
+bloque 20: figurar: 1#AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5#AT+SGPIO=0,
 bloque 24: 5,1,X;+SGPIO=0,6,1,X#AT#AT+CBTE?#AT+CCLK?#Estado principal:#Esta
 bloque 28: do zona:    #   REINICIAR   #ZONA correcta #Fecha: #Fecha errone
 Bloque 32: a#Hora erronea#Zonas activas  #Zona x act. NO #               #E 

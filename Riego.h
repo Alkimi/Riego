@@ -95,29 +95,18 @@ void setup();
 
 //add your function definitions for the project Riego here
 
-int get_key(unsigned int input); 	//*
-void tratarOpcion(byte x,byte y);	//*
+void tratarOpcion();	//*
 void controlTiempo(void); 			//*
-
-
-
-void getBateria(void);
-
-int lecturaPulsador(void);
 
 
 //metodos de pruebas a borrar
 #ifndef RELEASE_FINAL
 bool tratarRespuestaSerial(void); 	//*
-void pruebaRelay(void);				//*
 void leerEEPROM(byte pos,boolean tipo);			//*
 
 void configuracionSeguridad();
 void mostrarConfiguracionSeguridad();
 
-void cambioNumero(byte tipo,char*linea1,char* linea2);		//*
-void cambioNumeroSN(char *linea1,char *linea2,byte tipo);
-void cambioNumeroLimite(char *linea1,char *linea2,byte tipo);
 void riegoManual(byte zona);
 void estadoProblemaEnZona(byte zona);
 

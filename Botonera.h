@@ -12,7 +12,7 @@
 #else
 #include "WProgram.h"
 #endif
-#include "Menu.h"    //28100 840
+#include "Menu.h"    //28050 820
 
 #define CINCOSEGUNDOS 5000
 #define BOTONERA 0
@@ -34,25 +34,17 @@
 class Botonera {
 public:
 	Botonera(Menu * menu);
-
+	bool cambioValor(char *linea1,char *linea2,byte opcion);
 	int lecturaPulsador(void);
-
-	//void cambioNumeroSN(char *linea1,char *linea2,byte opcion);
-	//void cambioNumero(char *linea1, char* linea2,byte opcion);
-	void cambioNumeroLimite(char *linea1,char *linea2,byte opcion);
-
-	void cambioValor(char *linea1,char *linea2,byte opcion);
-
 	virtual ~Botonera();
 
-
 private:
-	int keyNumero;
 	Menu * myMenu;
-	int get_key(unsigned int input);
-	byte getLimite(byte opcion);
 	void cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actual,byte posicion);
 	byte desplazamiento(byte opcion, byte posicion, boolean derecha);
+	int get_key(unsigned int input);
+	byte getLimite(byte opcion);
+	byte getContadorInicio(char *linea1,char *linea2,byte opcion);
 };
 
 #endif /* BOTONERA_H_ */

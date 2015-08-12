@@ -62,9 +62,6 @@ void aumentaPulso(void){
 
 void pins_init()
 {
-	//analogReference(DEFAULT);
-/*	pinMode(BOTONERA, INPUT);
-	pinMode(CURRENT_SENSOR, INPUT);*/
 	//pinMode(GSM_POWER_ON_OFF,OUTPUT);
 	pinMode(VOLTAJE_BATERIA,INPUT);
 	pinMode(RETROILUMINACION, OUTPUT);
@@ -381,11 +378,8 @@ void controlTiempo(void) {
 }
 
 
-
-
-
-
-void tratarOpcion(byte x, byte y) {
+void tratarOpcion() {
+	Serial.print("dentro de tratar opcion: x: ");Serial.print(x);Serial.print(" Y: ");Serial.println(y); //TODO  a quitar
 	byte opcion = (x * numeroMaximoDeSubmenus) + y;
 	myMenu.noBlink();
 	char *linea1 = buffer2.aux;
@@ -507,7 +501,7 @@ void loop() {
 	  gprs.comandoGPRS();
 	controlTiempo();
 	key=botonera.lecturaPulsador();
-	if (key != -1) {
+	if (key != NO_KEY) {
 		tiempoCursor=millis();
 		tiempoDisplay=millis();
 		tiempoLuz=millis();
@@ -518,32 +512,33 @@ void loop() {
 		cursorActivo = true;
 		myMenu.blink(); // Mostramos el cursor parpadeando
 
-		if (key == 0) {  // Se ha pulsado la tecla derecha
+		if (key == KEY_DERECHA) {  // Se ha pulsado la tecla derecha
 			x++;
 			if (x > numeroMenusActivos - 1)
 				x = 0;
 			y = 0;
 		}
-		if (key == 1) {   // Se ha pulsado la tecla arriba
+		if (key == KEY_ARRIBA) {   // Se ha pulsado la tecla arriba
 			y--;
 			if (y < 0 )
 				y = numeroDeSubmenus[x] - 1;
 		}
-		if (key == 2) {  // Se ha pulsado la tecla abajo
+		if (key == KEY_ABAJO) {  // Se ha pulsado la tecla abajo
 			y++;
 			if (y > numeroDeSubmenus[x] - 1)
 				y = 0;
 		}
 
-		if (key == 3) {  // Se ha pulsado la tecla izquierda
+		if (key == KEY_IZQUIERDA) {  // Se ha pulsado la tecla izquierda
 			x--;
 			if (x < 0)
 				x = numeroMenusActivos - 1;
 			y = 0;
 		}
-		if (key == 4) {  // Se ha pulsado la tecla de seleccion
-			tratarOpcion(x, y);
+		if (key == KEY_SELECT) {  // Se ha pulsado la tecla de seleccion
+			tratarOpcion();
 		}
+		Serial.print("dentro de loop x:");Serial.print(x);Serial.print(" Y: ");Serial.println(y); //TODO  a quitar
 		myMenu.posicionActual(tituloMenu[x],
 				tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
 	}
