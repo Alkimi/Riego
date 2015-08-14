@@ -4,9 +4,9 @@
  *  Created on: 15/2/2015
  *      Author: Alkimi
  */
-
+#include "Riego.h"
 #include "controlZona.h"
-//#include "miEEPROM.h"
+#include "miEEPROM.h"
 
 extern UBuffer2 buffer2;
 
@@ -123,11 +123,29 @@ void controlZona::setRebentonZona(byte zona,bool estado){
 //	EEPROM.write(16+zona,estado);
 }
 
-void controlZona::setLitrosPorRiegoEnZona(byte zona, byte litros){
+void controlZona::setLitrosPorRiegoZona(byte zona, byte litros){
 	control[zona].litrosPorRiego=litros;
-	control[zona].activa=true;
-	cuentaZonasActivas();
+}
 
+void controlZona::setZonaActiva(byte zona,bool activa){
+	control[zona].activa=activa;
+	cuentaZonasActivas();
+}
+
+void controlZona::setHoraZona(byte zona, byte hora) {
+	control[zona].horaInicio=hora;
+}
+
+void controlZona::setMinutoZona(byte zona,byte minutos) {
+	control[zona].minutoInicio=minutos;
+}
+
+void controlZona::setDuracionZona(byte zona,byte duracion) {
+	control[zona].duracion=duracion;
+}
+
+void controlZona::setIntervaloZona(byte zona,byte intervalo) {
+	control[zona].intervaloRiego=intervalo;
 }
 
 void controlZona::setManualZona(byte zona, bool valor,unsigned long tiempo){
@@ -268,7 +286,9 @@ bool controlZona::isZonaActiva(byte zona){
 void controlZona::mostrarConfigurarInformacionZonas(boolean tipo){
 	byte zona;
 	bool activa=false;
-	Serial.println("dentro de mostrarConfigurarInformacionZonas "); //TODO  a quitar
+#ifndef RELEASE
+	Serial.println(F("dentro de mostrarConfigurarInformacionZonas "));
+#endif
 	unsigned long tiempoEspera=millis();
 	char *linea1 = buffer2.aux;
 	char *linea2 = &buffer2.aux[17];
@@ -280,9 +300,12 @@ void controlZona::mostrarConfigurarInformacionZonas(boolean tipo){
 	}
 	myMenu->posicionActual(linea1,linea2);
 	if (botonera->cambioValor(linea1,linea2,34)==true){
-		zona=linea2[14];
+		zona=linea2[14]-48;
 		EEPROM.leeCadenaEEPROM(543,linea1); //Zona x act. NO
 		linea1[5]=getNumeroZona(zona)+48;
+#ifndef RELEASE
+		Serial.print("valor de zona: ");Serial.print((byte)linea1[5]);Serial.print(" ");Serial.println(linea1[5]);
+#endif
 		if (isZonaActiva(zona)==true){
 				linea1[12]='S';
 				linea1[13]='I';
@@ -290,47 +313,93 @@ void controlZona::mostrarConfigurarInformacionZonas(boolean tipo){
 		}
 		EEPROM.leeCadenaEEPROM(559,linea2); //"               "
 		myMenu->posicionActual(linea1,linea2);
+
 		if (tipo==false){//establecemos la informacion de configuracion
-			if (botonera->cambioValor(linea1,linea2,12)==true){
-				if (linea1[12]=='S'){
-					activa=true;
-					//establece zona activa
-				}else{
-					activa=false;
-					//establece zona no activa
-				}
-				if (activa==true){
-					//establecemos hora
-
-					//establece duracion
-
-					//establecemos maximo litros riego
-
-					//establece periocidad
-				}
+			botonera->cambioValor(linea1,linea2,12);
+			if (linea1[12]=='S'){
+				activa=true;
+				setZonaActiva(zona,true);
+			}else{
+				activa=false;
+				setZonaActiva(zona,false);
 			}
-		}else{
-			//mostramos la informacion de configuracion
+		}
+		if (activa==true){
+			int aux;
+			// preparamos la salida de la hora guardada para ese registro
+			EEPROM.leeCadenaEEPROM(270,linea1); //Inicio riego
+			EEPROM.leeCadenaEEPROM(907,linea2); //hora:
+			aux = getHoraZona(zona);
+			linea2[6]= (aux / 10)+48;
+			linea2[7]= (aux % 10)+48;
+
+			linea2[8]=':';
+
+			aux = getMinutoZona(zona);
+			linea2[9]= (aux / 10)+48;
+			linea2[10]=(aux % 10)+48;
+			linea2[11]='\x0';
+			myMenu->posicionActual(linea1,linea2);
+			if (tipo==false){
+				//establecemos hora
+				botonera->cambioValor(linea1,linea2,31);
+				aux=(((linea2[6]-48)*10)+ (linea2[7]-48));
+				setHoraZona(zona,aux);
+				botonera->cambioValor(linea1,linea2,32);
+				aux=(((linea2[9]-48)*10)+ (linea2[10]-48));
+				setMinutoZona(zona,aux);
+			}else{
+				delay(2000);
+			}
+
+			//preparamos la salida para la duraccion de ese registro
+			EEPROM.leeCadenaEEPROM(255,linea1); //Duracion riego
+			EEPROM.leeCadenaEEPROM(245,linea2); //Minutos:
+			aux = getHoraZona(zona);
+			linea2[9]= (aux / 100)+48;
+			aux=aux%100;
+			linea2[10]= (aux / 10)+48;
+			linea2[11]= (aux % 10)+48;
+			linea2[12]='\x0';
+			myMenu->posicionActual(linea1,linea2);
+			if (tipo==false){
+				//establece duracion
+				botonera->cambioValor(linea1,linea2,33);
+				aux=(((linea2[9]-48)*100)+((linea2[10]-48)*10)+ (linea2[11]-48));
+				setDuracionZona(zona,aux);
+			}else{
+				delay(2000);
+			}
+
+			//preparamos la salida para el maximo de litros de riego para ese registro
+			EEPROM.leeCadenaEEPROM(218,linea1); //Max litros riego
+			EEPROM.leeCadenaEEPROM(235,linea2); //Litros:
+			aux = getLitrosPorRiegoZona(zona);
+			linea2[9]= (aux / 100)+48;
+			aux=aux%100;
+			linea2[10]= (aux / 10)+48;
+			linea2[11]= (aux % 10)+48;
+			linea2[12]='\x0';
+			myMenu->posicionActual(linea1,linea2);
+			if (tipo==false){
+				//establecemos maximo litros riego
+				botonera->cambioValor(linea1,linea2,33);
+				aux=(((linea2[9]-48)*100)+((linea2[10]-48)*10)+ (linea2[11]-48));
+				setLitrosPorRiegoZona(zona,aux);
+			}else{
+				delay(2000);
+			}
+
+			//preparamos la salida para la periodicidad de ese registro
+
+			//establece periocidad
 		}
 	}
-	myMenu->posicionActual(linea1,linea2);
-	delay(4000);
-	Serial.println("fuera de mostrarConfigurarInformacionZonas "); //TODO  a quitar
+#ifndef RELEASE
+		Serial.println(F("fuera de mostrarConfigurarInformacionZonas "));
+#endif
+	delay(2000);
 }
-
-
-void controlZona::actualizaDatosZona(byte zona){
-	char *linea1 = buffer2.aux;
-	char *linea2 = &buffer2.aux[17];
-	linea1="Zona activa ";
-	linea1[13]=zona+48;
-	linea2[14]=0x0;
-	linea2="Hora: 00:00";
-	botonera->cambioValor(linea1,linea2,31);
-	botonera->cambioValor(linea1,linea2,32);
-
-}
-
 
 #ifndef RELEASE_FINAL
 void controlZona::imprimirZonas(void){

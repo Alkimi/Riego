@@ -6,9 +6,9 @@
  3                                                                 128
  4                                                                 160
  5                                                                 192
- 6                                                                 224
- 7                                                                 256
- 8 # # # # # # # # # # # # # # # # # # # # # # # # # # # s e l e c 288
+ 6 # # # # # # # # # # # # # # # # # # # # # # # # # # M a x   l i 224
+ 7 t r o s   r i e g o # L i t r o s :     # M i n u t o s :   # D 256
+ 8 u r a c i o n   r i e g o # I n i c i o   r i e g o # s e l e c 288
  9 c i o n a   z o n a # a   m o s t r a r :         1 # a   c o n 320
 10 f i g u r a r :   1 # A T + C A L D = 1 ; + C A L D = 2 ; + C A 352 
  1 L D = 3 ; + C A L D = 4 ; + C A L D = 5 # A T + S G P I O = 0 , 384
@@ -43,8 +43,11 @@ p21   = tercer valor de contraseña
 p22   = cuarto valor de contraseña 
 p32-62= valores de zona de reigo, 5 zonas: activa, litros, hora, mintuos, intervalo, duracion
 
+                          1               3               4               6
+           0123456789012345678901234567890123456789012345678901234567890123
 bloque 0 : +34654019759
-bloque 16: ###########################selecciona zona#a mostrar:    1#a con 
+bloque 12: ##########################Max litros riego#Litros:  #Minutos: #D
+bloque 16: uracion riego#Inicio riego#selecciona zona#a mostrar:    1#a con 
 bloque 20: figurar: 1#AT+CALD=1;+CALD=2;+CALD=3;+CALD=4;+CALD=5#AT+SGPIO=0,
 bloque 24: 5,1,X;+SGPIO=0,6,1,X#AT#AT+CBTE?#AT+CCLK?#Estado principal:#Esta
 bloque 28: do zona:    #   REINICIAR   #ZONA correcta #Fecha: #Fecha errone
@@ -64,4 +67,7 @@ La bateria principal esta baja, si llega al nivel critico se apagara el sistama.
 La bateria principal esta recargada, se reanuda el funcionamiento normal. Dia: 02/05/15 Hora: 16:02:11 Pila: 2.97 Bateria: 13.15 V
 La bateria principal esta en nivel critico se apagara el sistama. Dia: 02/05/15 Hora: 16:04:00 Pila: 2.97 Bateria: 13.19 V 
   
-28616
+0123456789012345 
+Max litros riego
+Minutos: 000
+Litros:  000

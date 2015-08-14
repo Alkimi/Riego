@@ -7,7 +7,7 @@
 
 #ifndef CONTROLZONA_H_
 #define CONTROLZONA_H_
-#include "Riego.h"
+//#include "Riego.h"
 #include "Menu.h"
 #include "Botonera.h"
 
@@ -57,9 +57,15 @@ public:
 	void setFinRiegoZona(byte zona);
 	void setRegandoZona(byte zona, bool valor);
 	void setRebentonZona(byte zona,bool estado);
-	void setLitrosPorRiegoEnZona(byte zona,byte litros);
 	void setManualZona(byte zona,bool valor,unsigned long tiempo);
 	void setReiniciaZona(byte zona);
+
+	void setHoraZona(byte zona, byte hora);
+	void setMinutoZona(byte zona, byte minutos);
+	void setDuracionZona(byte zona, byte duracion);
+	void setIntervaloZona(byte zona, byte intervalo);
+	void setLitrosPorRiegoZona(byte zona, byte litros);
+	void setZonaActiva(byte zona,bool activa);
 
 	int getTotalLitros(void);
 	int getMaxLitrosRiego(void);
@@ -75,7 +81,6 @@ public:
 	unsigned long getTiempoZona(byte zona);
 
 	void mostrarConfigurarInformacionZonas(boolean tipo);
-	void actualizaDatosZona(byte zona);
 
 #ifndef RELEASE_FINAL
 	void imprimirZonas(void);

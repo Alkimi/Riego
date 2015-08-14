@@ -208,7 +208,7 @@ void controlTiempo(void) {
 		//reinicia el sistema
 	}*/
 
-/*	if ((millis()- cincomintuos) > CINCOMINUTOS){ //TODO ajustar los voltajes
+/*	if ((millis()- cincomintuos) > CINCOMINUTOS){
 		float suma=0.00;
 		cincomintuos=millis();
 		suma = gprs.energiaBateria();
@@ -379,12 +379,16 @@ void controlTiempo(void) {
 
 
 void tratarOpcion() {
-	Serial.print("dentro de tratar opcion: x: ");Serial.print(x);Serial.print(" Y: ");Serial.println(y); //TODO  a quitar
+#ifndef RELEASE
+	Serial.print(F("dentro de tratar opcion: x: "));Serial.print(x);Serial.print(F(" Y: "));Serial.println(y);
+#endif
 	byte opcion = (x * numeroMaximoDeSubmenus) + y;
 	myMenu.noBlink();
 	char *linea1 = buffer2.aux;
 	char *linea2 = &buffer2.aux[17];
-	Serial.print("opcion: ");Serial.println(opcion); //TODO  a quitar
+#ifndef RELEASE
+	Serial.print(F("opcion: "));Serial.println(opcion);
+#endif
 	switch (opcion) {
 	case 0:	// configuracion seguridad;
 		configuracionSeguridad();
@@ -463,7 +467,7 @@ void setup() {
 		EEPROM.leeCadenaEEPROM(681,linea1); //Contraseña
 		EEPROM.leeCadenaEEPROM(692,linea2); //valor: 0000
 		myMenu.posicionActual(linea1,linea2);
-		cambioNumero(0,linea1,linea2);
+		botonera.cambioValor(linea1,linea2,20);
 		for (byte i=0,j=7,k=19;i<4;i++,j++,k++){
 			if (linea2[j]!=EEPROM.read(k)){
 				SEGURIDAD=false;
@@ -491,7 +495,7 @@ void setup() {
 		Serial.print(F("millis hasta fin del dia. "));Serial.println(reinicio);
 	#endif
 	}
-#ifndef RELEASE
+#ifndef RELEASE_
 	Serial.print(F("Memoria libre: "));	Serial.println(util.freeRam());Serial.println(F("----------------------"));
 #endif
 }
@@ -538,7 +542,9 @@ void loop() {
 		if (key == KEY_SELECT) {  // Se ha pulsado la tecla de seleccion
 			tratarOpcion();
 		}
-		Serial.print("dentro de loop x:");Serial.print(x);Serial.print(" Y: ");Serial.println(y); //TODO  a quitar
+#ifndef RELEASE
+		Serial.print(F("dentro de loop x:"));Serial.print(x);Serial.print(F(" Y: "));Serial.println(y);
+#endif
 		myMenu.posicionActual(tituloMenu[x],
 				tituloSubmenu[(x * numeroMaximoDeSubmenus) + y]);
 	}
@@ -552,6 +558,7 @@ bool tratarRespuestaSerial() {
 	bool salidaRespuesta = true;
 
 	Serial.readString().toCharArray(buffer.buffer,150,0);
+	Serial.println(buffer.buffer);
 
 	//SMS: tipo
 	if (buffer.buffer[0]=='S' && buffer.buffer[1]=='M' &&  buffer.buffer[2]=='S' && buffer.buffer[3]==':'){

@@ -6,21 +6,23 @@
  */
 
 #include "Botonera.h"
+#define RELEASE
 
 Botonera::Botonera(Menu * menu) {
-	// TODO Auto-generated constructor stub
 	myMenu = menu;
 }
 
 
 bool Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
-	Serial.println("dentro de Botonera::cambioValor "); //TODO  a quitar
+#ifndef RELEASE
+	Serial.println(F("dentro de Botonera::cambioValor "));
+#endif
 	bool salida = false;
 	bool tiempo= true;
 	unsigned long tiempoEspera=millis();
 	int keyNumero;
 	int contador=getContadorInicio(linea1,linea2,opcion);
-	byte posicion=desplazamiento(opcion,0,true);
+	byte posicion=desplazamiento(opcion,0,true,true);
 	byte limite = getLimite(opcion);
 #ifndef RELEASE
 	Serial.print(F("limite: "));Serial.print(limite);Serial.print(F(" posicion: "));Serial.print(posicion);Serial.print(F(" opcion: "));Serial.println(opcion);
@@ -28,13 +30,10 @@ bool Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
 	do {
 		keyNumero=lecturaPulsador();
 		if (keyNumero != NO_KEY) {
-#ifndef RELEASE
-	Serial.print(F("tecla pulsada: "));Serial.println(keyNumero);
-#endif
 			tiempoEspera=millis();
 			///myMenu->SetCursor(myX, 1);
 			if (keyNumero == KEY_DERECHA) {  // Se ha pulsado la tecla derecha
-				posicion=desplazamiento(opcion,posicion,true);
+				posicion=desplazamiento(opcion,posicion,true,false);
 			}
 			if (keyNumero == KEY_ARRIBA) {
 				contador++;
@@ -52,12 +51,15 @@ bool Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
 			}
 			//sprintf(cadena,"%.2i",contador);
 			if (keyNumero == KEY_IZQUIERDA) {  // Se ha pulsado la tecla izquierda
-				posicion=desplazamiento(opcion,posicion,false);
+				posicion=desplazamiento(opcion,posicion,false,false);
 			}
 
 			if (keyNumero == KEY_SELECT) { // Se ha pulsado la tecla de seleccion
 				salida = true;
 			}
+#ifndef RELEASE
+	Serial.print(F("limite: "));Serial.print(limite);Serial.print(F(" posicion: "));Serial.print(posicion);Serial.print(F(" opcion: "));Serial.println(opcion);
+#endif
 		}else{
 			if (millis()-tiempoEspera> CINCOSEGUNDOS){
 				salida=true;
@@ -65,7 +67,9 @@ bool Botonera::cambioValor(char *linea1,char *linea2,byte opcion){
 			}
 		}
 	} while (!salida);
-	Serial.println("fuera de Botonera::cambioValor "); //TODO  a quitar
+#ifndef RELEASE
+	Serial.println(F("fuera de Botonera::cambioValor "));
+#endif
 	return tiempo;
 }
 
@@ -96,12 +100,12 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 		myMenu->SetCursor(posicion, 0);
 		if (actual==0){
 			myMenu->print("NO");
-			linea1[opcion] = 'N';
-			linea1[opcion+1] = 'O';
+			linea1[posicion] = 'N';
+			linea1[posicion+1] = 'O';
 		}else{
 			myMenu->print("SI");
-			linea1[opcion] = 'S';
-			linea1[opcion+1] = 'I';
+			linea1[posicion] = 'S';
+			linea1[posicion+1] = 'I';
 		}
 	}
 
@@ -133,9 +137,31 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 	// tipo hora 23
 	if (opcion==31){
 		myMenu->SetCursor(posicion,1);
-		char *cadena = &linea1[posicion-1];
+		linea2[6]= (actual / 10)+48;
+		myMenu->write(linea2[6]);
+		linea2[7]= (actual % 10)+48;
+		myMenu->write(linea2[7]);
+	}
 
-		sprintf(cadena,"%.2i",actual);
+	// tipo minuto 59
+	if (opcion==32){
+		myMenu->SetCursor(posicion,1);
+		linea2[9]= (actual / 10)+48;
+		myMenu->write(linea2[9]);
+		linea2[10]= (actual % 10)+48;
+		myMenu->write(linea2[10]);
+	}
+
+	// tipo 255
+	if (opcion==33){
+		myMenu->SetCursor(posicion,1);
+		linea2[9]= (actual / 100)+48;
+		myMenu->write(linea2[9]);
+		byte aux = actual % 100;
+		linea2[10]= (aux / 10)+48;
+		myMenu->write(linea2[10]);
+		linea2[11]= (aux % 10)+48;
+		myMenu->write(linea2[11]);
 	}
 
 	if (opcion==34){
@@ -147,8 +173,12 @@ void Botonera::cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actu
 	}
 }
 
-byte Botonera::desplazamiento(byte opcion, byte posicion, boolean derecha){
+byte Botonera::desplazamiento(byte opcion, byte posicion, boolean derecha, boolean inicial){
 	byte posicionDestino=posicion;
+
+	if (opcion<20){
+		return opcion;
+	}
 
 	if (opcion>20 && opcion <40){
 		boolean fechaHora=true;
@@ -168,32 +198,32 @@ byte Botonera::desplazamiento(byte opcion, byte posicion, boolean derecha){
 				if (opcion==31){
 					return 6;
 				}else{
-					if (opcion==32){
+					if ((opcion==32) || (opcion ==33)){
 						return 9;
 					}else{
-						if (opcion==33){
-							return 10;
-						}else{
-							if (opcion==34){
-								return 14;
-							}
+						if (opcion==34){
+							return 14;
 						}
 					}
 				}
 			}
 		}
-		if (derecha==true){
-			posicionDestino++;
-			if ((fechaHora==true) && ((posicionDestino == 9) || (posicionDestino == 12)))
-				posicionDestino++;
-			if (posicionDestino > xmax)
-				posicionDestino = xmin;
+		if (inicial==true){
+			return xmin;
 		}else{
-			posicionDestino--;
-			if ((fechaHora==true) && ((posicionDestino == 9) || (posicionDestino == 12)))
+			if (derecha==true){
+				posicionDestino++;
+				if ((fechaHora==true) && ((posicionDestino == 9) || (posicionDestino == 12)))
+					posicionDestino++;
+				if (posicionDestino > xmax)
+					posicionDestino = xmin;
+			}else{
 				posicionDestino--;
-			if (posicionDestino < xmin)
-				posicion = xmax;
+				if ((fechaHora==true) && ((posicionDestino == 9) || (posicionDestino == 12)))
+					posicionDestino--;
+				if (posicionDestino < xmin)
+					posicion = xmax;
+			}
 		}
 	}
 	return posicionDestino;
@@ -210,7 +240,7 @@ byte Botonera::getContadorInicio(char *linea1,char *linea2,byte opcion){
 	}
 
 	//tipo numerico 0-9
-	if (opcion==20){
+	if ((opcion==20)|| (opcion==23)){
 		return linea2[7]-48;
 	}
 
@@ -223,55 +253,40 @@ byte Botonera::getContadorInicio(char *linea1,char *linea2,byte opcion){
 	}
 
 	if (opcion==31){
-		return linea2[10];
+		return (((linea2[6]-48)*10)+(linea2[7]-48));
 	}
 
 	if (opcion==32){
-		return linea2[10];
+		return (((linea2[9]-48)*10)+(linea2[10]-48));
 	}
 
 	if (opcion==33){
-		return linea2[10];
+		return ((((linea2[9]-48)*100)+(linea2[10]-48)*10)+(linea2[11]-48));
 	}
 
 	if (opcion==34){
 		return linea2[14]-49;
 	}
 
-
+	return 0;
 }
 
 
 // Convertimos el valor leido en analogico en un numero de boton pulsado
 int Botonera::get_key(unsigned int input) {
 	if (input < ADC_KEY_DERECHA ){
-#ifndef RELEASE
-	Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_DERECHA);
-#endif
 		return KEY_DERECHA ;
 	}else{
 		if (input < ADC_KEY_ARRIBA ){
-#ifndef RELEASE
-			Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_ARRIBA);
-#endif
 			return KEY_ARRIBA ;
 		}else{
 			if (input < ADC_KEY_ABAJO ){
-#ifndef RELEASE
-				Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_ABAJO);
-#endif
 			   return KEY_ABAJO ;
 			}else{
 				if (input < ADC_KEY_IZQUIERDA){
-#ifndef RELEASE
-					Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_IZQUIERDA);
-#endif
 					return KEY_IZQUIERDA;
 				}else{
 					if (input < ADC_KEY_SELECT){
-#ifndef RELEASE
-						Serial.print(F("tecla pulsada: "));Serial.print(input);Serial.print(F(" key: "));Serial.println(KEY_SELECT);
-#endif
 						return KEY_SELECT;
 					}else{
 						return NO_KEY;

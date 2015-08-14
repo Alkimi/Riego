@@ -10,12 +10,10 @@
 #endif
 
 Utilidades::Utilidades() {
-	// TODO Auto-generated constructor stub
 
 }
 
 Utilidades::~Utilidades() {
-	// TODO Auto-generated destructor stub
 }
 
 int Utilidades::freeRam() {

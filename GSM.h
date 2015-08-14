@@ -3,12 +3,10 @@
 #ifndef __GSM
 #define __GSM
 #include "Riego.h"
-
-
 #include "Menu.h"
 #include "controlZona.h"
-
-//#include "miEEPROM.h"
+#include "miEEPROM.h"
+#include <SoftwareSerial.h>
 
 #define GSM_LIB_VERSION_MAYOR "0"
 #define GSM_LIB_VERSION_MENOR "6.0"
@@ -90,9 +88,7 @@ public:
     void limpiaBufferI(void);
 
 private:
-    //#ifndef DEBUG_PROCESS
-        SoftwareSerial* myPortSerial;
-    //#endif
+    SoftwareSerial* myPortSerial;
     char bufferI[MAX_BUFFER];
     unsigned long tiempoValvula;
     boolean cadena_errores[4];

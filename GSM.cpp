@@ -65,7 +65,7 @@ void GSM::enviaSMS(char *numero,boolean reventon,byte zona,byte litros){
 }*/
 
 void GSM::enviaSMSError(byte tipo){
-	    //byte valor=tipo; //TODO
+	    //byte valor=tipo;
 	   // byte i=0;
 	   /* if (valor>30){
 	    	valor-=30;

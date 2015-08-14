@@ -1,7 +1,7 @@
 #ifndef _Riego_H_
 #define _Riego_H_
 
-//#define RELEASE		//28194 + 814  => 27202 +808
+//#define RELEASE
 //#define RELEASE_FINAL
 //#define C_SEGURIDAD
 
@@ -10,15 +10,8 @@
 #else
 #include "WProgram.h"
 #endif
-#include "miEEPROM.h"
-//#include "controlZona.h"
+//
 
-
-
-//#include <Time.h>
-//#include "Flash.h"
-
-#include <SoftwareSerial.h>
 
 //pins usados
 /*
@@ -68,11 +61,11 @@
 #define VOLTAJE_BATERIA 2
 #define RETROILUMINACION 10
 
-#define RIEGO_VERSION_MAYOR "0" //15088 676 646
-#define RIEGO_VERSION_MENOR "7.0" //20172 651 622
+#define RIEGO_VERSION_MAYOR "0"
+#define RIEGO_VERSION_MENOR "7.0"
 #define RIEGO_VERSION RIEGO_VERSION_MAYOR"."RIEGO_VERSION_MENOR
 
-typedef union{  //28106  + 820  411   28360 + 824  438
+typedef union{
 	char SMS[MAX_BUFFER_SMS];
 	char buffer[MAX_BUFFER];
 } UBuffer;
@@ -112,8 +105,6 @@ void estadoProblemaEnZona(byte zona);
 
 
 #endif
-
-//#endif
 
 //Do not add code below this line
 #endif /* _Riego_H_ */

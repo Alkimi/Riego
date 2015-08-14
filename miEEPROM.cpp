@@ -4,8 +4,11 @@
  *  Created on: 6/1/2015
  *      Author: Alkimi
  */
-
+#if ARDUINO >= 100
 #include "Arduino.h"
+#else
+#include "WProgram.h"
+#endif
 #include "miEEPROM.h"
 #include <avr/eeprom.h>
 

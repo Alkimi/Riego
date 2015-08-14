@@ -7,12 +7,13 @@
 
 #ifndef BOTONERA_H_
 #define BOTONERA_H_
+#define RELEASE_
 #if ARDUINO >= 100
 #include "Arduino.h"
 #else
 #include "WProgram.h"
 #endif
-#include "Menu.h"    //28050 820
+#include "Menu.h"    //28954 780  29734
 
 #define CINCOSEGUNDOS 5000
 #define BOTONERA 0
@@ -41,7 +42,7 @@ public:
 private:
 	Menu * myMenu;
 	void cambioValorOpcion(char *linea1,char *linea2,byte opcion,byte actual,byte posicion);
-	byte desplazamiento(byte opcion, byte posicion, boolean derecha);
+	byte desplazamiento(byte opcion, byte posicion, boolean derecha, boolean inicial);
 	int get_key(unsigned int input);
 	byte getLimite(byte opcion);
 	byte getContadorInicio(char *linea1,char *linea2,byte opcion);
